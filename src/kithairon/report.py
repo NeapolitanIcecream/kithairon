@@ -15,6 +15,17 @@ Input: `{{ input_path }}`
 Engine: `{{ engine }}`
 
 Generated candidates: {{ candidates | length }}
+{% if fallback_path %}
+## Fallback path
+
+- reason: {{ fallback_path.reason }}
+- strict best: {{ fallback_path.strict.best_score }}
+- strict average: {{ fallback_path.strict.average_score }}
+- repair: {% if fallback_path.repair.triggered %}triggered{% else %}skipped{% endif %}
+- repair best: {{ fallback_path.repair.best_score }}
+- solver: {% if fallback_path.solver.triggered %}triggered{% else %}skipped{% endif %}
+- solver available: {{ fallback_path.solver.available }}
+{% endif %}
 
 ## Top candidates
 

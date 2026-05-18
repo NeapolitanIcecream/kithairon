@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import KithaironConfig, format_fraction, write_resolved_config
+from kithairon.engines.auto import generate_auto_candidates
 from kithairon.engines.repair import generate_repair_candidates
 from kithairon.engines.solver import generate_solver_candidates
 from kithairon.engines.strict import generate_strict_candidates, transform_spec_to_dict
@@ -35,7 +36,7 @@ def run_generation(
     output_dir: Path,
     config: KithaironConfig,
 ) -> GenerationRun:
-    engine = "strict" if config.generation.engine == "auto" else config.generation.engine
+    engine = config.generation.engine
     output_dir.mkdir(parents=True, exist_ok=True)
     melody = parse_melody(input_path, config.input)
     candidates = _generate_candidates(melody, config, engine)
@@ -81,6 +82,8 @@ def _generate_candidates(
 ) -> tuple[CanonCandidate, ...]:
     if not isinstance(melody, Melody):
         raise TypeError("expected Melody")
+    if engine == "auto":
+        return generate_auto_candidates(melody, config)
     if engine == "strict":
         return generate_strict_candidates(melody, config)
     if engine == "repair":
@@ -153,6 +156,7 @@ def _results_payload(
         "output_dir": str(output_dir),
         "resolved_config": config.to_json_dict(),
         "candidates": [_candidate_to_result(candidate) for candidate in candidates],
+        **_fallback_payload(candidates),
     }
 
 
@@ -172,6 +176,16 @@ def _candidate_to_result(candidate: CanonCandidate) -> dict[str, Any]:
         "outputs": outputs,
         "metadata": _metadata_without_expanded_sections(candidate.metadata),
     }
+
+
+def _fallback_payload(candidates: tuple[CanonCandidate, ...]) -> dict[str, Any]:
+    if not candidates:
+        return {}
+    fallback_path = candidates[0].metadata.get("fallback_path")
+    if isinstance(fallback_path, Mapping):
+        mapped = cast(Mapping[object, object], fallback_path)
+        return {"fallback_path": _jsonable(mapped)}
+    return {}
 
 
 def _violation_to_dict(violation: RuleViolation) -> dict[str, Any]:
