@@ -13,6 +13,11 @@ from kithairon import __version__
 from kithairon.config import KithaironConfig, build_config_overrides, deep_merge, load_config
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import run_generation
+from kithairon.visualization.artifact_index import (
+    ArtifactIndexError,
+    resolve_candidate_artifact,
+    resolve_run_artifact,
+)
 
 console = Console()
 ALLOWED_UPLOAD_SUFFIXES = {".mid", ".midi", ".musicxml", ".xml", ".mxl"}
@@ -95,7 +100,7 @@ def create_app(
     """Create the visualization FastAPI application."""
     from fastapi import FastAPI, File, Form, Request, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
+    from fastapi.responses import FileResponse, JSONResponse
 
     app = FastAPI(title="Kithairon Visualization API", version=__version__)
     settings = ApiSettings(
@@ -126,6 +131,16 @@ def create_app(
         project_error = cast(KithaironError, exc)
         return JSONResponse(status_code=400, content=project_error.to_diagnostic())
 
+    async def artifact_error_handler(_request: Request, exc: Exception) -> JSONResponse:
+        artifact_error = cast(ArtifactIndexError, exc)
+        return JSONResponse(
+            status_code=400,
+            content=Diagnostic(
+                code="artifact_index_error",
+                message=str(artifact_error),
+            ).to_dict(),
+        )
+
     async def unexpected_error_handler(_request: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(
             status_code=500,
@@ -138,6 +153,7 @@ def create_app(
 
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(KithaironError, project_error_handler)
+    app.add_exception_handler(ArtifactIndexError, artifact_error_handler)
     app.add_exception_handler(Exception, unexpected_error_handler)
 
     def health() -> dict[str, str]:
@@ -202,6 +218,74 @@ def create_app(
         return _read_json_object(generation.visualization_path)
 
     app.add_api_route("/api/runs", create_run, methods=["POST"])
+
+    def get_run(run_id: str) -> dict[str, object]:
+        return _run_visualization(settings, run_id)
+
+    def get_run_visualization(run_id: str) -> dict[str, object]:
+        return _run_visualization(settings, run_id)
+
+    def get_run_artifact(run_id: str, kind: str) -> FileResponse:
+        index_path = _artifact_index_path(settings, run_id)
+        artifact_path = resolve_run_artifact(index_path, kind)
+        return _download_response(artifact_path)
+
+    def get_candidate(run_id: str, candidate_id: str) -> dict[str, object]:
+        visualization = _run_visualization(settings, run_id)
+        candidates = visualization.get("candidates")
+        if not isinstance(candidates, list):
+            raise ApiError(
+                "Visualization payload does not contain candidates.",
+                code="visualization_candidates_invalid",
+                status_code=500,
+            )
+        for candidate in cast(list[object], candidates):
+            if not isinstance(candidate, dict):
+                continue
+            mapped = cast(dict[object, object], candidate)
+            if mapped.get("candidate_id") == candidate_id:
+                return {str(key): value for key, value in mapped.items()}
+        raise ApiError(
+            "Candidate was not found in this run.",
+            code="candidate_not_found",
+            status_code=404,
+            details={"run_id": run_id, "candidate_id": candidate_id},
+        )
+
+    def get_candidate_artifact(run_id: str, candidate_id: str, kind: str) -> FileResponse:
+        index_path = _artifact_index_path(settings, run_id)
+        artifact_path = resolve_candidate_artifact(index_path, candidate_id, kind)
+        return _download_response(artifact_path)
+
+    def get_candidate_musicxml(run_id: str, candidate_id: str) -> FileResponse:
+        return get_candidate_artifact(run_id, candidate_id, "musicxml")
+
+    def get_candidate_midi(run_id: str, candidate_id: str) -> FileResponse:
+        return get_candidate_artifact(run_id, candidate_id, "midi")
+
+    app.add_api_route("/api/runs/{run_id}", get_run, methods=["GET"])
+    app.add_api_route("/api/runs/{run_id}/visualization", get_run_visualization, methods=["GET"])
+    app.add_api_route("/api/runs/{run_id}/artifact/{kind}", get_run_artifact, methods=["GET"])
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}",
+        get_candidate,
+        methods=["GET"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}/musicxml",
+        get_candidate_musicxml,
+        methods=["GET"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}/midi",
+        get_candidate_midi,
+        methods=["GET"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}/artifact/{kind}",
+        get_candidate_artifact,
+        methods=["GET"],
+    )
     return app
 
 
@@ -304,3 +388,35 @@ def _read_json_object(path: Path) -> dict[str, object]:
         )
     mapped = cast(dict[object, object], payload)
     return {str(key): value for key, value in mapped.items()}
+
+
+def _run_visualization(settings: ApiSettings, run_id: str) -> dict[str, object]:
+    return _read_json_object(_run_dir(settings, run_id) / "visualization.json")
+
+
+def _artifact_index_path(settings: ApiSettings, run_id: str) -> Path:
+    return _run_dir(settings, run_id) / "artifact_index.json"
+
+
+def _run_dir(settings: ApiSettings, run_id: str) -> Path:
+    if Path(run_id).name != run_id or run_id in {"", ".", ".."}:
+        raise ApiError(
+            "Run id is not valid.",
+            code="invalid_run_id",
+            status_code=400,
+            details={"run_id": run_id},
+        )
+    return settings.output_root / run_id
+
+
+def _download_response(path: Path) -> Any:
+    from fastapi.responses import FileResponse
+
+    if not path.exists() or not path.is_file():
+        raise ApiError(
+            "Artifact file was not found.",
+            code="artifact_not_found",
+            status_code=404,
+            details={"path": str(path)},
+        )
+    return FileResponse(path, filename=path.name)
