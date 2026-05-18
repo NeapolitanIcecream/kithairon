@@ -61,3 +61,7 @@ class TransformError(KithaironError):
 
 class GenerationError(KithaironError):
     """Raised when candidate generation or output writing cannot continue."""
+
+
+class OutputError(KithaironError):
+    """Raised when artifact output paths cannot be prepared."""

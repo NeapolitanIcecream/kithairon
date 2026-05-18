@@ -47,3 +47,67 @@ def test_generate_command_writes_strict_outputs(tmp_path: Path) -> None:
     assert (out_dir / outputs["musicxml"]).exists()
     assert (out_dir / outputs["midi"]).exists()
     assert "Top candidates" in report_path.read_text(encoding="utf-8")
+
+
+def test_generate_command_uses_suffixed_output_dir_when_existing_dir_is_nonempty(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "strict"
+    out_dir.mkdir()
+    marker = out_dir / "keep.txt"
+    marker.write_text("existing output", encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "examples/melodies/scale_c_major.musicxml",
+            "--out",
+            str(out_dir),
+            "--engine",
+            "strict",
+            "--top-k",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = cast(dict[str, Any], json.loads(result.stdout))
+    actual_out = Path(cast(str, payload["out"]))
+
+    assert actual_out == tmp_path / "strict-1"
+    assert marker.exists()
+    assert (actual_out / "results.json").exists()
+
+
+def test_generate_command_overwrites_existing_output_dir_when_requested(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "strict"
+    out_dir.mkdir()
+    marker = out_dir / "stale.txt"
+    marker.write_text("stale output", encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "examples/melodies/scale_c_major.musicxml",
+            "--out",
+            str(out_dir),
+            "--engine",
+            "strict",
+            "--top-k",
+            "1",
+            "--overwrite",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = cast(dict[str, Any], json.loads(result.stdout))
+
+    assert payload["out"] == str(out_dir)
+    assert not marker.exists()
+    assert (out_dir / "results.json").exists()

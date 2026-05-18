@@ -25,6 +25,7 @@ def parse_melody(path: str | Path, config: InputConfig | None = None) -> Melody:
     """Read a MIDI or MusicXML file and return a monophonic melody."""
     source_path = Path(path)
     input_config = InputConfig() if config is None else config
+    _ensure_input_file(source_path)
     _ensure_supported_path(source_path)
 
     try:
@@ -98,6 +99,21 @@ def quarter_length_to_fraction(
     if quantize:
         return parsed.limit_denominator(max_denominator)
     return parsed
+
+
+def _ensure_input_file(path: Path) -> None:
+    if not path.exists():
+        raise ParseError(
+            f"Input file not found: {path}",
+            code="input_not_found",
+            details={"path": str(path)},
+        )
+    if not path.is_file():
+        raise ParseError(
+            f"Input path is not a file: {path}",
+            code="input_not_file",
+            details={"path": str(path)},
+        )
 
 
 def _ensure_supported_path(path: Path) -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from fractions import Fraction
@@ -15,7 +16,7 @@ from kithairon.engines.auto import generate_auto_candidates
 from kithairon.engines.repair import generate_repair_candidates
 from kithairon.engines.solver import generate_solver_candidates
 from kithairon.engines.strict import generate_strict_candidates, transform_spec_to_dict
-from kithairon.errors import GenerationError
+from kithairon.errors import GenerationError, OutputError
 from kithairon.export import CandidateExportPaths, write_candidate_exports
 from kithairon.ir import CanonCandidate, Melody, RuleViolation
 from kithairon.report import report_candidate_rows, write_report
@@ -35,11 +36,14 @@ def run_generation(
     input_path: Path,
     output_dir: Path,
     config: KithaironConfig,
+    *,
+    overwrite_output: bool = False,
 ) -> GenerationRun:
     engine = config.generation.engine
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = _resolve_output_dir(output_dir, overwrite_output=overwrite_output)
     melody = parse_melody(input_path, config.input)
     candidates = _generate_candidates(melody, config, engine)
+    _prepare_output_dir(output_dir, overwrite_output=overwrite_output)
     candidates_with_outputs = _write_candidate_outputs(candidates, output_dir)
 
     resolved_config_path = output_dir / "resolved_config.toml"
@@ -72,6 +76,50 @@ def run_generation(
         resolved_config_path=resolved_config_path,
         candidates=candidates_with_outputs,
         results=results,
+    )
+
+
+def _resolve_output_dir(output_dir: Path, *, overwrite_output: bool) -> Path:
+    if not output_dir.exists():
+        return output_dir
+    if overwrite_output or _is_empty_dir(output_dir):
+        return output_dir
+    return _next_available_output_dir(output_dir)
+
+
+def _prepare_output_dir(output_dir: Path, *, overwrite_output: bool) -> None:
+    try:
+        if output_dir.exists() and overwrite_output:
+            _remove_output_path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise OutputError(
+            f"Could not prepare output directory: {output_dir}",
+            code="output_directory_unavailable",
+            details={"path": str(output_dir), "error": str(exc)},
+        ) from exc
+
+
+def _remove_output_path(output_path: Path) -> None:
+    if output_path.is_dir():
+        shutil.rmtree(output_path)
+    else:
+        output_path.unlink()
+
+
+def _is_empty_dir(path: Path) -> bool:
+    return path.is_dir() and not any(path.iterdir())
+
+
+def _next_available_output_dir(output_dir: Path) -> Path:
+    for index in range(1, 1000):
+        candidate = output_dir.with_name(f"{output_dir.name}-{index}")
+        if not candidate.exists():
+            return candidate
+    raise OutputError(
+        f"Could not find an available output directory next to: {output_dir}",
+        code="output_directory_collision",
+        details={"path": str(output_dir), "attempts": 999},
     )
 
 

@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, NoReturn
 
 import typer
+from click import UsageError, get_current_context
 from rich.console import Console
 
 from kithairon import __version__
 from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import build_config_overrides, load_config, write_resolved_config
-from kithairon.errors import KithaironError
+from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import GenerationRun, run_generation
 
 console = Console()
+debug_traceback = False
+overwrite_output = False
 
 app = typer.Typer(
     name="canonize",
@@ -23,6 +27,15 @@ app = typer.Typer(
 )
 config_app = typer.Typer(help="Inspect and write resolved configuration.")
 app.add_typer(config_app, name="config")
+
+
+@dataclass(frozen=True)
+class GenerateCommandOptions:
+    config_path: Path | None
+    chord_policy: str | None
+    engine: str | None
+    top_k: int | None
+    overwrite: bool
 
 
 def _option(*param_decls: str, **kwargs: Any) -> object:
@@ -34,8 +47,6 @@ def _argument(**kwargs: Any) -> object:
 
 
 INPUT_PATH_ARGUMENT: object = _argument(
-    exists=True,
-    dir_okay=False,
     help="MIDI or MusicXML melody file to parse.",
 )
 CONFIG_PATH_OPTION: object = _option(
@@ -75,11 +86,25 @@ ENGINE_OPTION: object = _option(
     help="Override generation engine: auto, strict, repair, or solver.",
 )
 TOP_K_OPTION: object = _option("--top-k", min=1)
+DEBUG_OPTION: object = _option(
+    "--debug",
+    help="Show Python tracebacks instead of compact JSON diagnostics.",
+)
+OVERWRITE_OUTPUT_OPTION: object = _option(
+    "--overwrite",
+    help="Replace an existing output directory instead of creating a suffixed directory.",
+)
 
 
 @app.callback()
-def root() -> None:
+def root(
+    debug: Annotated[bool, DEBUG_OPTION] = False,
+    overwrite: Annotated[bool, OVERWRITE_OUTPUT_OPTION] = False,
+) -> None:
     """Generate playable and explainable canon variants from a monophonic melody."""
+    global debug_traceback, overwrite_output
+    debug_traceback = debug
+    overwrite_output = overwrite
 
 
 @app.command()
@@ -106,8 +131,9 @@ def validate(
         config = load_config(config_path, overrides)
         melody = parse_melody(input_path, config.input)
     except KithaironError as exc:
-        console.print_json(data=exc.to_diagnostic())
-        raise typer.Exit(code=1) from exc
+        _exit_project_error(exc)
+    except Exception as exc:
+        _exit_unexpected_error(exc)
 
     console.print_json(
         data={
@@ -121,7 +147,7 @@ def validate(
     )
 
 
-@app.command()
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def generate(
     input_path: Annotated[Path, INPUT_PATH_ARGUMENT],
     out: Annotated[Path, OUT_DIR_OPTION],
@@ -134,10 +160,13 @@ def generate(
     payload = _run_generate_command(
         input_path=input_path,
         out=out,
-        config_path=config_path,
-        chord_policy=chord_policy,
-        engine=engine,
-        top_k=top_k,
+        options=GenerateCommandOptions(
+            config_path=config_path,
+            chord_policy=chord_policy,
+            engine=engine,
+            top_k=top_k,
+            overwrite=_generate_overwrite_flag(),
+        ),
     )
     console.print_json(data=payload)
 
@@ -146,24 +175,34 @@ def _run_generate_command(
     *,
     input_path: Path,
     out: Path,
-    config_path: Path | None,
-    chord_policy: str | None,
-    engine: str | None,
-    top_k: int | None,
+    options: GenerateCommandOptions,
 ) -> dict[str, object]:
     overrides = build_config_overrides(
-        chord_policy=chord_policy,
-        engine=engine,
-        top_k=top_k,
+        chord_policy=options.chord_policy,
+        engine=options.engine,
+        top_k=options.top_k,
     )
     try:
-        config = load_config(config_path, overrides)
-        generation = run_generation(input_path, out, config)
+        config = load_config(options.config_path, overrides)
+        generation = run_generation(input_path, out, config, overwrite_output=options.overwrite)
     except KithaironError as exc:
-        console.print_json(data=exc.to_diagnostic())
-        raise typer.Exit(code=1) from exc
+        _exit_project_error(exc)
+    except Exception as exc:
+        _exit_unexpected_error(exc)
 
     return _generation_success_payload(generation)
+
+
+def _generate_overwrite_flag() -> bool:
+    context = get_current_context(silent=True)
+    extra_args = [] if context is None else list(context.args)
+    overwrite = overwrite_output
+    for arg in extra_args:
+        if arg == "--overwrite":
+            overwrite = True
+        else:
+            raise UsageError(f"Unsupported generate option or argument: {arg}")
+    return overwrite
 
 
 def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
@@ -196,8 +235,9 @@ def resolve_config(
     try:
         config = load_config(config_path, overrides)
     except KithaironError as exc:
-        console.print_json(data=exc.to_diagnostic())
-        raise typer.Exit(code=1) from exc
+        _exit_project_error(exc)
+    except Exception as exc:
+        _exit_unexpected_error(exc)
 
     rendered = config.to_json() + "\n" if output_format == "json" else config.to_toml()
 
@@ -208,6 +248,26 @@ def resolve_config(
     else:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(rendered, encoding="utf-8")
+
+
+def _exit_project_error(exc: KithaironError) -> NoReturn:
+    if debug_traceback:
+        raise exc
+    console.print_json(data=exc.to_diagnostic())
+    raise typer.Exit(code=1) from exc
+
+
+def _exit_unexpected_error(exc: Exception) -> NoReturn:
+    if debug_traceback:
+        raise exc
+    console.print_json(
+        data=Diagnostic(
+            code="internal_error",
+            message="An unexpected internal error occurred. Re-run with --debug for a traceback.",
+            details={"error_type": type(exc).__name__, "error": str(exc)},
+        ).to_dict()
+    )
+    raise typer.Exit(code=1) from exc
 
 
 def main() -> None:
