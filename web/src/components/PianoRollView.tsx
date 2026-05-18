@@ -5,7 +5,7 @@ import { buildPianoRollLayout, type PianoRollNoteBox } from '../viz/pianoRollLay
 
 type PianoRollViewProps = {
   candidate: CandidateViz | null
-  selectedEventId: string | null
+  selectedEventIds: string[]
   onSelectEvent: (eventId: string) => void
 }
 
@@ -14,7 +14,7 @@ const laneHeight = 78
 
 export function PianoRollView({
   candidate,
-  selectedEventId,
+  selectedEventIds,
   onSelectEvent,
 }: PianoRollViewProps) {
   const [zoom, setZoom] = useState(1)
@@ -129,7 +129,7 @@ export function PianoRollView({
             <PianoRollNote
               key={note.eventId}
               note={note}
-              selected={note.eventId === selectedEventId}
+              selected={selectedEventIds.includes(note.eventId)}
               hovered={note.eventId === hoveredEventId}
               onSelectEvent={onSelectEvent}
               onHover={setHoveredEventId}

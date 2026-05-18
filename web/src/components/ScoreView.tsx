@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Box, Button, Group, Loader, Stack, Text } from '@mantine/core'
 import { fetchCandidateMusicXml } from '../api/artifacts'
-import type { CandidateViz } from '../api/schemas'
+import type { CandidateViz, ViolationViz } from '../api/schemas'
 import type { ScoreRenderer, ScoreRenderResult } from '../music/scoreRenderer'
 import { defaultScoreRenderer } from '../music/verovioScoreRenderer'
 
 type ScoreViewProps = {
   runId: string | null
   candidate: CandidateViz | null
+  selectedViolation: ViolationViz | null
   renderer?: ScoreRenderer
 }
 
 export function ScoreView({
   runId,
   candidate,
+  selectedViolation,
   renderer = defaultScoreRenderer,
 }: ScoreViewProps) {
   const [page, setPage] = useState(1)
@@ -98,6 +100,11 @@ export function ScoreView({
 
   return (
     <Stack gap="sm">
+      {selectedViolation !== null ? (
+        <Alert color="blue" variant="light" title="Score target">
+          Bar {selectedViolation.bar ?? '-'} / Beat {selectedViolation.beat?.text ?? '-'}
+        </Alert>
+      ) : null}
       <Group justify="space-between" gap="sm">
         <Group gap="xs">
           <Button

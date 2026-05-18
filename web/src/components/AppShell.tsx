@@ -11,32 +11,55 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import type { CandidateViz, RunSummary } from '../api/schemas'
+import type { CandidateViz, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
 import { PianoRollView } from './PianoRollView'
 import { ScoreView } from './ScoreView'
 import { UploadPanel } from './UploadPanel'
+import { ViolationInspector } from './ViolationInspector'
 
 export function KithaironAppShell() {
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
       candidates.find((candidate) => candidate.candidate_id === selectedCandidateId) ?? null,
     [candidates, selectedCandidateId],
   )
+  const selectedViolation = useMemo(
+    () =>
+      selectedCandidate?.violations.find(
+        (violation) => violation.violation_id === selectedViolationId,
+      ) ?? null,
+    [selectedCandidate, selectedViolationId],
+  )
+  const highlightedEventIds =
+    selectedViolation?.event_ids ?? (selectedEventId === null ? [] : [selectedEventId])
 
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
     setSelectedCandidateId(nextRunSummary.candidates[0]?.candidate_id ?? null)
     setSelectedEventId(null)
+    setSelectedViolationId(null)
   }
 
   function handleCandidateSelect(candidateId: string) {
     setSelectedCandidateId(candidateId)
     setSelectedEventId(null)
+    setSelectedViolationId(null)
+  }
+
+  function handleEventSelect(eventId: string) {
+    setSelectedEventId(eventId)
+    setSelectedViolationId(null)
+  }
+
+  function handleViolationSelect(violation: ViolationViz) {
+    setSelectedViolationId(violation.violation_id)
+    setSelectedEventId(violation.event_ids[0] ?? null)
   }
 
   return (
@@ -105,6 +128,7 @@ export function KithaironAppShell() {
                     key={selectedCandidate.candidate_id}
                     runId={runSummary.run_id}
                     candidate={selectedCandidate}
+                    selectedViolation={selectedViolation}
                   />
                 </Stack>
               ) : (
@@ -117,8 +141,8 @@ export function KithaironAppShell() {
                 <PianoRollView
                   key={selectedCandidate?.candidate_id ?? 'empty'}
                   candidate={selectedCandidate}
-                  selectedEventId={selectedEventId}
-                  onSelectEvent={setSelectedEventId}
+                  selectedEventIds={highlightedEventIds}
+                  onSelectEvent={handleEventSelect}
                 />
               </Box>
               {selectedEventId !== null ? (
@@ -130,9 +154,11 @@ export function KithaironAppShell() {
           </Stack>
           <Paper className="inspector-surface" mih={596} p="md">
             <Text className="surface-title">Inspector</Text>
-            <InspectorPreview
+            <SelectedEventPreview candidate={selectedCandidate} selectedEventId={selectedEventId} />
+            <ViolationInspector
               candidate={selectedCandidate}
-              selectedEventId={selectedEventId}
+              selectedViolationId={selectedViolationId}
+              onSelectViolation={handleViolationSelect}
             />
           </Paper>
         </Box>
@@ -189,7 +215,7 @@ function CandidateSummary({ candidate, runSummary }: CandidateSummaryProps) {
   )
 }
 
-function InspectorPreview({
+function SelectedEventPreview({
   candidate,
   selectedEventId,
 }: {
@@ -197,36 +223,20 @@ function InspectorPreview({
   selectedEventId: string | null
 }) {
   if (candidate === null) {
-    return <EmptyWorkSurface message="No candidate selected." />
+    return null
   }
 
   const selectedNote = candidate.notes.find((note) => note.event_id === selectedEventId)
-  if (selectedNote !== undefined) {
-    return (
-      <Stack gap="sm" mt="md">
-        <Text fw={700}>{selectedNote.event_id}</Text>
-        <Text size="sm">{selectedNote.pitch_name ?? 'Rest'}</Text>
-        <Text size="sm" c="dimmed">
-          Start {selectedNote.start_q.text} / End {selectedNote.end_q.text}
-        </Text>
-      </Stack>
-    )
-  }
-
-  const firstViolation = candidate.violations[0]
-  if (firstViolation === undefined) {
-    return <EmptyWorkSurface message="No violations for this candidate." />
+  if (selectedNote === undefined) {
+    return null
   }
 
   return (
-    <Stack gap="sm" mt="md">
-      <Badge variant="light" color={firstViolation.severity === 'hard' ? 'red' : 'yellow'}>
-        {firstViolation.severity}
-      </Badge>
-      <Text fw={700}>{firstViolation.rule_id}</Text>
-      <Text size="sm">{firstViolation.message}</Text>
+    <Stack className="selected-event-panel" gap="xs" mt="md">
+      <Text fw={700}>{selectedNote.event_id}</Text>
+      <Text size="sm">{selectedNote.pitch_name ?? 'Rest'}</Text>
       <Text size="sm" c="dimmed">
-        Bar {firstViolation.bar ?? '-'} / Beat {firstViolation.beat?.text ?? '-'}
+        Start {selectedNote.start_q.text} / End {selectedNote.end_q.text}
       </Text>
     </Stack>
   )
@@ -238,13 +248,5 @@ function Metric({ label, value }: { label: string; value: string }) {
       <Text className="metric-label">{label}</Text>
       <Text className="metric-value">{value}</Text>
     </Box>
-  )
-}
-
-function EmptyWorkSurface({ message }: { message: string }) {
-  return (
-    <Text className="empty-surface" mt="md">
-      {message}
-    </Text>
   )
 }

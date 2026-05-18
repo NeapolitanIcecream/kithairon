@@ -43,7 +43,7 @@ describe('PianoRollView', () => {
       <MantineProvider>
         <PianoRollView
           candidate={candidate()}
-          selectedEventId={null}
+          selectedEventIds={[]}
           onSelectEvent={onSelectEvent}
         />
       </MantineProvider>,

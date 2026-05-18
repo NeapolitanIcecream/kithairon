@@ -178,6 +178,29 @@
   filter: drop-shadow(0 0 3px rgba(17, 24, 39, 0.35));
 }
 
+.selected-event-panel,
+.violation-row {
+  width: 100%;
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  text-align: left;
+}
+
+.violation-row[data-selected='true'] {
+  border-color: #267a8f;
+  background: #eef7f9;
+}
+
+.penalty-value {
+  min-width: 42px;
+  color: #1f2933;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: right;
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;

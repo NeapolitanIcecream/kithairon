@@ -49,7 +49,12 @@ describe('ScoreView', () => {
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MantineProvider>
-          <ScoreView runId="run-1" candidate={candidate()} renderer={renderer} />
+          <ScoreView
+            runId="run-1"
+            candidate={candidate()}
+            selectedViolation={null}
+            renderer={renderer}
+          />
         </MantineProvider>
       </QueryClientProvider>,
     )
