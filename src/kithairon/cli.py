@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 
 from kithairon import __version__
+from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import build_config_overrides, load_config, write_resolved_config
 from kithairon.errors import KithaironError
 
@@ -27,6 +28,15 @@ def _option(*param_decls: str, **kwargs: Any) -> object:
     return typer.Option(*param_decls, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
 
+def _argument(**kwargs: Any) -> object:
+    return typer.Argument(**kwargs)  # pyright: ignore[reportUnknownMemberType]
+
+
+INPUT_PATH_ARGUMENT: object = _argument(
+    exists=True,
+    dir_okay=False,
+    help="MIDI or MusicXML melody file to parse.",
+)
 CONFIG_PATH_OPTION: object = _option(
     "--config",
     "-c",
@@ -48,6 +58,11 @@ CHORD_POLICY_OPTION: object = _option(
     "--chord-policy",
     help="Override input chord handling: error, top-note, or bottom-note.",
 )
+PART_POLICY_OPTION: object = _option(
+    "--part-policy",
+    help="Override part selection: first, highest-average-pitch, or explicit-index.",
+)
+PART_INDEX_OPTION: object = _option("--part-index", min=0)
 ENGINE_OPTION: object = _option(
     "--engine",
     help="Override generation engine: auto, strict, repair, or solver.",
@@ -64,6 +79,39 @@ def root() -> None:
 def version() -> None:
     """Show the installed Kithairon version."""
     console.print(__version__)
+
+
+@app.command()
+def validate(
+    input_path: Annotated[Path, INPUT_PATH_ARGUMENT],
+    config_path: Annotated[Path | None, CONFIG_PATH_OPTION] = None,
+    chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
+    part_policy: Annotated[str | None, PART_POLICY_OPTION] = None,
+    part_index: Annotated[int | None, PART_INDEX_OPTION] = None,
+) -> None:
+    """Validate that an input file can be parsed as a monophonic melody."""
+    overrides = build_config_overrides(
+        chord_policy=chord_policy,
+        part_policy=part_policy,
+        part_index=part_index,
+    )
+    try:
+        config = load_config(config_path, overrides)
+        melody = parse_melody(input_path, config.input)
+    except KithaironError as exc:
+        console.print_json(data=exc.to_diagnostic())
+        raise typer.Exit(code=1) from exc
+
+    console.print_json(
+        data={
+            "status": "ok",
+            "path": str(input_path),
+            "events": len(melody.events),
+            "time_signature": melody.time_signature,
+            "tempo_bpm": melody.tempo_bpm,
+            "key_hint": melody.key_hint,
+        }
+    )
 
 
 @config_app.command("resolve")
