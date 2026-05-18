@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from fastapi.routing import APIRoute
@@ -13,9 +14,10 @@ def test_canonize_web_help_documents_server_options() -> None:
     result = CliRunner().invoke(cli, ["--help"], terminal_width=160, color=False)
 
     assert result.exit_code == 0, result.stdout
-    assert "--output-root" in result.stdout
-    assert "--serve-frontend" in result.stdout
-    assert "--read-only" in result.stdout
+    help_text = _compact_help_text(result.stdout)
+    assert "--output-root" in help_text
+    assert "--serve-frontend" in help_text
+    assert "--read-only" in help_text
 
 
 def test_create_app_exposes_health_endpoint() -> None:
@@ -38,3 +40,8 @@ def test_create_app_serves_built_frontend_without_hiding_api(tmp_path: Path) -> 
     assert "Kithairon app" in client.get("/").text
     assert "console.log" in client.get("/assets/app.js").text
     assert client.get("/api/health").json()["status"] == "ok"
+
+
+def _compact_help_text(text: str) -> str:
+    without_ansi = re.sub(r"\x1b\[[0-9;]*m", "", text)
+    return "".join(without_ansi.split())
