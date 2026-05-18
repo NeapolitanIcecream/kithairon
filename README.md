@@ -1,8 +1,8 @@
 # Kithairon
 
-Kithairon is a small symbolic music compiler that turns a monophonic melody into several playable canon variants. It will use explicit canon transformations to guarantee strict canon candidates, then apply explainable harmony and voice-leading rules to score them. When strict candidates are weak, optional repair and CP-SAT solver engines can produce relaxed canon variants while preserving a clear link to the original melody.
+Kithairon is a small symbolic music compiler that turns a monophonic melody into several playable canon variants. It uses explicit canon transformations to guarantee strict canon candidates, then applies explainable harmony and voice-leading rules to score them. When strict candidates are weak, optional repair and CP-SAT solver engines can produce relaxed canon variants while preserving a clear link to the original melody.
 
-The repository is currently initialized for the first implementation step: Python package metadata, `src/` layout, a Typer CLI entry point, Ruff, Pyright, pytest, and English documentation scaffolding.
+Use it from the `canonize` CLI with MIDI or MusicXML input. Each generation run writes playable files, a machine-readable result file, the resolved config, and a Markdown report.
 
 ## Requirements
 
@@ -11,17 +11,19 @@ The repository is currently initialized for the first implementation step: Pytho
 
 ## Install
 
+Install the default package and development dependencies:
+
 ```bash
 uv sync
 ```
 
-Install the optional solver dependencies when working on the future CP-SAT engine:
+Install OR-Tools when you want the CP-SAT solver engine:
 
 ```bash
 uv sync --extra solver
 ```
 
-Install the optional documentation dependencies when previewing the docs site:
+Install documentation dependencies only when previewing the MkDocs site:
 
 ```bash
 uv sync --extra docs
@@ -29,31 +31,161 @@ uv sync --extra docs
 
 ## Quickstart
 
-Show the CLI help:
+Validate an input melody:
 
 ```bash
-uv run canonize --help
+uv run canonize validate examples/melodies/scale_c_major.musicxml
 ```
 
-Show the installed package version:
+Generate the top three strict canon candidates:
 
 ```bash
-uv run canonize version
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/strict \
+  --engine strict \
+  --top-k 3
 ```
 
-Generation commands such as `canonize generate` will be added after the melody IR, parser, transform, scoring, and export layers are implemented.
+The output directory contains:
+
+- `results.json`: full candidate data, scores, violations, transforms, and output paths.
+- `report.md`: a readable summary of top candidates and penalty reasons.
+- `resolved_config.toml`: the exact config used for the run.
+- `candidates/*.musicxml` and `candidates/*.mid`: playable exports for each candidate.
+
+A successful command returns a compact JSON payload:
+
+```json
+{
+  "status": "ok",
+  "engine": "strict",
+  "out": "tmp/strict",
+  "candidates": 3,
+  "results": "tmp/strict/results.json",
+  "report": "tmp/strict/report.md",
+  "resolved_config": "tmp/strict/resolved_config.toml"
+}
+```
+
+If `--out` already exists and is not empty, Kithairon writes to a suffixed directory such as `tmp/strict-1`. To replace the existing output directory, put `--overwrite` before the subcommand:
+
+```bash
+uv run canonize --overwrite generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/strict \
+  --engine strict
+```
+
+## Engine Examples
+
+Strict generation keeps the follower voice as an exact transform of the input melody:
+
+```bash
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/strict \
+  --engine strict \
+  --top-k 3
+```
+
+Repair generation starts from strict candidates and edits a limited number of follower notes when that improves the score:
+
+```bash
+uv run canonize generate examples/melodies/bad_for_canon.musicxml \
+  --out tmp/repair \
+  --engine repair \
+  --top-k 3
+```
+
+Solver generation uses OR-Tools CP-SAT to search for a relaxed follower voice under edit limits:
+
+```bash
+uv sync --extra solver
+uv run canonize generate examples/melodies/bad_for_canon.musicxml \
+  --out tmp/solver \
+  --engine solver \
+  --top-k 1
+```
+
+Auto generation ranks strict candidates first. If the strict pool falls below the configured quality thresholds, it adds repair candidates and may add solver candidates when the solver dependency is installed:
+
+```bash
+uv run canonize generate examples/melodies/bad_for_canon.musicxml \
+  --out tmp/auto \
+  --engine auto \
+  --top-k 4
+```
+
+## Strict And Relaxed Canons
+
+A strict canon has `strict_canon: true` in `results.json`. The follower is exactly produced from the source melody by the recorded `transform_spec`, for example transposition, inversion, retrograde, augmentation, or diminution with a delay.
+
+A relaxed canon has `strict_canon: false`. It still records the source transform and candidate lineage, but the repair or solver engine may change follower pitches under configured edit limits. The report includes the edit plan and the rule penalties that remain after the edits.
+
+## Input Files
+
+Supported input formats:
+
+- MIDI: `.mid`, `.midi`
+- MusicXML: `.musicxml`, `.xml`, `.mxl`
+
+Inputs must be monophonic by default. If a MusicXML file contains chords and you want to extract one note from each chord, choose a chord policy:
+
+```bash
+uv run canonize validate path/to/melody.musicxml --chord-policy top-note
+```
+
+For multi-part scores, select a part with `--part-policy` and `--part-index` during validation, or put the same settings in a config file.
+
+## Config
+
+Print the resolved default config:
+
+```bash
+uv run canonize config resolve
+```
+
+Write a TOML config and reuse it:
+
+```bash
+uv run canonize config resolve --out kithairon.toml
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --config kithairon.toml \
+  --out tmp/from-config
+```
+
+CLI flags override config values for the same run:
+
+```bash
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --config kithairon.toml \
+  --engine repair \
+  --top-k 2 \
+  --out tmp/repair-from-config
+```
+
+## Errors
+
+Common user errors return JSON diagnostics instead of Python tracebacks. Examples include missing input files, unsupported formats, chord or polyphonic input, invalid config, and missing solver dependencies.
+
+To debug an unexpected exception, put `--debug` before the subcommand:
+
+```bash
+uv run canonize --debug generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/debug \
+  --engine strict
+```
 
 ## Development
 
-Run the standard quality checks:
+Run the full local gate:
 
 ```bash
-uv run pytest
 uv run ruff check .
+uv run ruff format --check .
 uv run pyright
+uv run pytest
 ```
 
-Run the Cremona refactor audit locally:
+Run the Cremona refactor audit:
 
 ```bash
 uv run coverage run -m pytest -q
@@ -61,18 +193,14 @@ uv run coverage json -o coverage.json
 uv run cremona scan --baseline quality/refactor-baseline.json --coverage-json coverage.json --fail-on-regression
 ```
 
-The committed baseline lives at `quality/refactor-baseline.json`. Refresh it only after structural debt is intentionally reduced or Cremona changes its baseline schema:
+Refresh the committed baseline only after structural debt is intentionally reduced or Cremona changes its baseline schema:
 
 ```bash
 uv run cremona scan --update-baseline
 ```
 
-Preview the English documentation site:
+Preview the documentation site:
 
 ```bash
 uv run --extra docs mkdocs serve
 ```
-
-## Planned Scope
-
-The first full version will support MIDI and MusicXML input, strict canon enumeration, relaxed repair candidates, optional OR-Tools CP-SAT fallback, Markdown reports, JSON results, and exported MIDI/MusicXML files for each candidate.
