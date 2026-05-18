@@ -78,6 +78,7 @@ class ApiSettings:
     read_only: bool = False
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
     musescore_bin: Path | None = None
+    serve_frontend: Path | None = None
 
 
 class RenderRequest(BaseModel):
@@ -109,11 +110,13 @@ def create_app(
     read_only: bool = False,
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES,
     musescore_bin: Path | None = None,
+    serve_frontend: Path | None = None,
 ) -> Any:
     """Create the visualization FastAPI application."""
     from fastapi import FastAPI, File, Form, Request, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.staticfiles import StaticFiles
 
     app = FastAPI(title="Kithairon Visualization API", version=__version__)
     settings = ApiSettings(
@@ -122,6 +125,7 @@ def create_app(
         read_only=read_only,
         max_upload_bytes=max_upload_bytes,
         musescore_bin=musescore_bin,
+        serve_frontend=serve_frontend,
     )
     app.state.settings = settings
 
@@ -338,6 +342,12 @@ def create_app(
         render_candidate,
         methods=["POST"],
     )
+    if settings.serve_frontend is not None:
+        app.mount(
+            "/",
+            StaticFiles(directory=settings.serve_frontend, html=True),
+            name="frontend",
+        )
     return app
 
 
@@ -353,7 +363,6 @@ def serve(
     read_only: Annotated[bool, READ_ONLY_OPTION] = False,
 ) -> None:
     """Serve the visualization API."""
-    _ = (musescore_bin, serve_frontend)
     import uvicorn
 
     output_root.mkdir(parents=True, exist_ok=True)
@@ -362,6 +371,7 @@ def serve(
         cors_origins=tuple(cors_origin or ()),
         read_only=read_only,
         musescore_bin=musescore_bin,
+        serve_frontend=serve_frontend,
     )
     console.print(f"Serving Kithairon visualization API on http://{host}:{port}")
     uvicorn.run(

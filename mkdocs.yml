@@ -5,3 +5,4 @@ theme:
 nav:
   - Home: index.md
   - Development: development.md
+  - Visualization: visualization.md
