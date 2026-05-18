@@ -29,10 +29,10 @@ Generated candidates: {{ candidates | length }}
 
 ## Top candidates
 
-| Rank | ID | Score | Quality | Transform | Outputs |
-| ---: | --- | ---: | --- | --- | --- |
+| Rank | ID | Canon | Score | Quality | Transform | Outputs |
+| ---: | --- | --- | ---: | --- | --- | --- |
 {% for c in candidates -%}
-| {{ c.r }} | `{{ c.id }}` | {{ "%.2f"|format(c.s) }} | {{ c.q }} | {{ c.t }} | {{ c.o }} |
+{{ c.row }}
 {% endfor %}
 
 ## Main penalty reasons
@@ -85,12 +85,28 @@ def _report_candidate_row(candidate: Mapping[str, Any]) -> dict[str, Any]:
         "r": candidate["rank"],
         "s": candidate["score"],
         "q": candidate["quality_status"],
+        "cl": candidate["canon_label"],
         "t": _transform_summary(transform),
         "o": f"[MusicXML]({outputs['musicxml']}), [MIDI]({outputs['midi']})",
+        "row": _candidate_table_row(candidate, transform, outputs),
         "p": _top_penalties(candidate),
         "e": _edit_plan(candidate),
         "od": _objective_details(candidate),
     }
+
+
+def _candidate_table_row(
+    candidate: Mapping[str, Any],
+    transform: Mapping[str, Any],
+    outputs: Mapping[str, Any],
+) -> str:
+    score = float(candidate["score"])
+    output_links = f"[MusicXML]({outputs['musicxml']}), [MIDI]({outputs['midi']})"
+    return (
+        f"| {candidate['rank']} | `{candidate['id']}` | {candidate['canon_label']} | "
+        f"{score:.2f} | {candidate['quality_status']} | {_transform_summary(transform)} | "
+        f"{output_links} |"
+    )
 
 
 def _top_penalties(candidate: Mapping[str, Any]) -> list[Mapping[str, Any]]:

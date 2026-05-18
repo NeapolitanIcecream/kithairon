@@ -2,6 +2,7 @@
   "candidate": {
     "engine": "strict",
     "id": "strict_0156",
+    "canon_label": "strict canon",
     "outputs": {
       "midi": "candidates/001_strict_diminution_delay_8_interval_0.mid",
       "musicxml": "candidates/001_strict_diminution_delay_8_interval_0.musicxml"

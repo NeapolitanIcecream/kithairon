@@ -105,7 +105,7 @@ uv run canonize generate examples/melodies/bad_for_canon.musicxml \
   --top-k 1
 ```
 
-Auto generation ranks strict candidates first. If the strict pool falls below the configured quality thresholds, it adds repair candidates and may add solver candidates when the solver dependency is installed:
+Auto generation ranks strict candidates first. If the strict pool falls below the configured quality thresholds, it adds repair candidates. It may add solver candidates when the solver dependency is installed and `[solver].enabled = true` in the resolved config:
 
 ```bash
 uv run canonize generate examples/melodies/bad_for_canon.musicxml \
@@ -116,9 +116,9 @@ uv run canonize generate examples/melodies/bad_for_canon.musicxml \
 
 ## Strict And Relaxed Canons
 
-A strict canon has `strict_canon: true` in `results.json`. The follower is exactly produced from the source melody by the recorded `transform_spec`, for example transposition, inversion, retrograde, augmentation, or diminution with a delay.
+A strict canon has `strict_canon: true` and `canon_label: "strict canon"` in `results.json`. The follower is exactly produced from the source melody by the recorded `transform_spec`, for example transposition, inversion, retrograde, augmentation, or diminution with a delay.
 
-A relaxed canon has `strict_canon: false`. It still records the source transform and candidate lineage, but the repair or solver engine may change follower pitches under configured edit limits. The report includes the edit plan and the rule penalties that remain after the edits.
+A relaxed canon has `strict_canon: false` and `canon_label: "relaxed canon"`. It still records the source transform and candidate lineage, but the repair or solver engine may change follower pitches under configured edit limits. The report includes the edit plan and the rule penalties that remain after the edits.
 
 ## Input Files
 

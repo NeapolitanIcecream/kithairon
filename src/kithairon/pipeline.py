@@ -216,6 +216,7 @@ def _candidate_to_result(candidate: CanonCandidate) -> dict[str, Any]:
         "rank": candidate.metadata.get("rank"),
         "engine": candidate.engine,
         "strict_canon": candidate.strict_canon,
+        "canon_label": _canon_label(candidate),
         "score": candidate.score,
         "quality_status": candidate.metadata.get("quality_status"),
         "transform_spec": transform_spec_to_dict(candidate.transform_spec),
@@ -224,6 +225,10 @@ def _candidate_to_result(candidate: CanonCandidate) -> dict[str, Any]:
         "outputs": outputs,
         "metadata": _metadata_without_expanded_sections(candidate.metadata),
     }
+
+
+def _canon_label(candidate: CanonCandidate) -> str:
+    return "strict canon" if candidate.strict_canon else "relaxed canon"
 
 
 def _fallback_payload(candidates: tuple[CanonCandidate, ...]) -> dict[str, Any]:

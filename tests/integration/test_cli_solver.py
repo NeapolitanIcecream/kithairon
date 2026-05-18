@@ -43,11 +43,13 @@ def test_generate_solver_writes_relaxed_candidate_with_objective_details(tmp_pat
     assert results["engine"] == "solver"
     assert first_candidate["engine"] == "solver"
     assert first_candidate["strict_canon"] is False
+    assert first_candidate["canon_label"] == "relaxed canon"
     assert metadata["edit_plan"]
     assert metadata["objective_details"]
     assert (out_dir / outputs["musicxml"]).exists()
     assert (out_dir / outputs["midi"]).exists()
 
     report = (out_dir / "report.md").read_text(encoding="utf-8")
+    assert "relaxed canon" in report
     assert "Edit plan" in report
     assert "Objective details" in report

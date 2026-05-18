@@ -44,6 +44,8 @@ def test_generate_command_writes_strict_outputs(tmp_path: Path) -> None:
     assert len(results["candidates"]) == 2
     first_candidate = cast(dict[str, Any], results["candidates"][0])
     outputs = cast(dict[str, str], first_candidate["outputs"])
+    assert first_candidate["strict_canon"] is True
+    assert first_candidate["canon_label"] == "strict canon"
     assert (out_dir / outputs["musicxml"]).exists()
     assert (out_dir / outputs["midi"]).exists()
     assert "Top candidates" in report_path.read_text(encoding="utf-8")

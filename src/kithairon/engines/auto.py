@@ -92,7 +92,7 @@ def _should_trigger_solver(
     repair_triggered: bool,
     config: KithaironConfig,
 ) -> bool:
-    if not repair_triggered:
+    if not repair_triggered or not config.solver.enabled:
         return False
     best_repair_score = max((candidate.score for candidate in repair_candidates), default=0.0)
     return best_repair_score < config.quality.auto_solver_threshold

@@ -63,6 +63,7 @@ def _top_candidate_snapshot(results: dict[str, Any]) -> dict[str, Any]:
             "rank": candidate["rank"],
             "engine": candidate["engine"],
             "strict_canon": candidate["strict_canon"],
+            "canon_label": candidate["canon_label"],
             "score": candidate["score"],
             "quality_status": candidate["quality_status"],
             "transform_spec": candidate["transform_spec"],
