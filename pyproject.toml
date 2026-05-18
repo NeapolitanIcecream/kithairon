@@ -31,6 +31,8 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "coverage>=7.14.0",
+    "cremona",
     "hypothesis>=6.152.7",
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
@@ -54,3 +56,30 @@ include = ["src", "tests"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["src", "tests"]
+
+[tool.cremona]
+profile = "kithairon"
+targets = ["src", "tests"]
+exclude = [
+    ".git",
+    ".venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".pyright",
+    "site",
+    "output",
+    "*/__pycache__/*",
+]
+out_dir = "output/refactor-audit"
+baseline = "quality/refactor-baseline.json"
+
+[tool.cremona.profiles.kithairon]
+base = "generic-python"
+subsystem_priority_offsets = { tests = -10 }
+
+[tool.uv.sources]
+cremona = { git = "https://github.com/NeapolitanIcecream/cremona.git" }

@@ -45,12 +45,26 @@ Generation commands such as `canonize generate` will be added after the melody I
 
 ## Development
 
-Run the step 1 quality checks:
+Run the standard quality checks:
 
 ```bash
 uv run pytest
 uv run ruff check .
 uv run pyright
+```
+
+Run the Cremona refactor audit locally:
+
+```bash
+uv run coverage run -m pytest -q
+uv run coverage json -o coverage.json
+uv run cremona scan --baseline quality/refactor-baseline.json --coverage-json coverage.json --fail-on-regression
+```
+
+The committed baseline lives at `quality/refactor-baseline.json`. Refresh it only after structural debt is intentionally reduced or Cremona changes its baseline schema:
+
+```bash
+uv run cremona scan --update-baseline
 ```
 
 Preview the English documentation site:

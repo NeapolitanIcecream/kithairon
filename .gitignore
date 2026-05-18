@@ -42,6 +42,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
+coverage.json
 .cache
 nosetests.xml
 coverage.xml
@@ -166,6 +167,9 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+# Generated audit and generation reports
+/output/
 
 # mypy
 .mypy_cache/
