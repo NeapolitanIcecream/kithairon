@@ -230,6 +230,11 @@
   text-align: right;
 }
 
+.tempo-slider {
+  min-width: 180px;
+  flex: 1;
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;

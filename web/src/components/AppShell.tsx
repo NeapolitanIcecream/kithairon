@@ -14,6 +14,7 @@ import {
 import type { CandidateViz, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
 import { PianoRollView } from './PianoRollView'
+import { PlaybackControls } from './PlaybackControls'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { ScoreView } from './ScoreView'
 import { UploadPanel } from './UploadPanel'
@@ -25,6 +26,7 @@ export function KithaironAppShell() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
   const [violationCategoryFilter, setViolationCategoryFilter] = useState('all')
+  const [activePlaybackEventIds, setActivePlaybackEventIds] = useState<string[]>([])
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
@@ -38,8 +40,10 @@ export function KithaironAppShell() {
       ) ?? null,
     [selectedCandidate, selectedViolationId],
   )
-  const highlightedEventIds =
-    selectedViolation?.event_ids ?? (selectedEventId === null ? [] : [selectedEventId])
+  const highlightedEventIds = uniqueEventIds([
+    ...(selectedViolation?.event_ids ?? (selectedEventId === null ? [] : [selectedEventId])),
+    ...activePlaybackEventIds,
+  ])
 
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
@@ -47,6 +51,7 @@ export function KithaironAppShell() {
     setSelectedEventId(null)
     setSelectedViolationId(null)
     setViolationCategoryFilter('all')
+    setActivePlaybackEventIds([])
   }
 
   function handleCandidateSelect(candidateId: string) {
@@ -54,6 +59,7 @@ export function KithaironAppShell() {
     setSelectedEventId(null)
     setSelectedViolationId(null)
     setViolationCategoryFilter('all')
+    setActivePlaybackEventIds([])
   }
 
   function handleEventSelect(eventId: string) {
@@ -141,6 +147,13 @@ export function KithaironAppShell() {
             </Paper>
             <Paper className="roll-surface" mih={240} p="md">
               <Text className="surface-title">Piano Roll</Text>
+              <Box mt="md">
+                <PlaybackControls
+                  key={selectedCandidate?.candidate_id ?? 'empty-playback'}
+                  candidate={selectedCandidate}
+                  onActiveEventIdsChange={setActivePlaybackEventIds}
+                />
+              </Box>
               <Box mt="md">
                 <PianoRollView
                   key={selectedCandidate?.candidate_id ?? 'empty'}
@@ -264,4 +277,8 @@ function Metric({ label, value }: { label: string; value: string }) {
       <Text className="metric-value">{value}</Text>
     </Box>
   )
+}
+
+function uniqueEventIds(eventIds: string[]): string[] {
+  return Array.from(new Set(eventIds))
 }
