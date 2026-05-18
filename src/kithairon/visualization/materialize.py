@@ -14,6 +14,7 @@ from kithairon.visualization.models import (
     RationalDTO,
     RepairActionDTO,
     RepairActionKindDTO,
+    RunSummaryDTO,
     ScoreBreakdownDTO,
     TransformOriginDTO,
     TransformVizDTO,
@@ -64,6 +65,26 @@ def materialize_candidate(
         repair_actions=repair_actions,
         artifacts=artifact_urls,
         metadata=_jsonable_mapping(candidate.metadata, exclude={"outputs", "score_breakdown"}),
+    )
+
+
+def materialize_run_summary(
+    *,
+    run_id: str,
+    input_name: str,
+    created_at: str,
+    config_summary: Mapping[str, object],
+    run_artifacts: Mapping[str, str],
+    candidates: tuple[CanonCandidate, ...],
+) -> RunSummaryDTO:
+    """Create the visualization summary for one generation run."""
+    return RunSummaryDTO(
+        run_id=run_id,
+        input_name=input_name,
+        created_at=created_at,
+        config_summary=dict(config_summary),
+        artifacts=dict(run_artifacts),
+        candidates=[materialize_candidate(candidate) for candidate in candidates],
     )
 
 

@@ -214,6 +214,8 @@ def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
         "results": str(generation.results_path),
         "report": str(generation.report_path),
         "resolved_config": str(generation.resolved_config_path),
+        "visualization": str(generation.visualization_path),
+        "artifact_index": str(generation.artifact_index_path),
     }
 
 

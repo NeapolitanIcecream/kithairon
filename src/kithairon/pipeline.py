@@ -6,6 +6,7 @@ import json
 import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, cast
@@ -20,6 +21,8 @@ from kithairon.errors import GenerationError, OutputError
 from kithairon.export import CandidateExportPaths, write_candidate_exports
 from kithairon.ir import CanonCandidate, Melody, RuleViolation
 from kithairon.report import report_candidate_rows, write_report
+from kithairon.visualization.artifact_index import build_artifact_index
+from kithairon.visualization.materialize import materialize_run_summary
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,8 @@ class GenerationRun:
     results_path: Path
     report_path: Path
     resolved_config_path: Path
+    visualization_path: Path
+    artifact_index_path: Path
     candidates: tuple[CanonCandidate, ...]
     results: Mapping[str, Any]
 
@@ -49,6 +54,8 @@ def run_generation(
     resolved_config_path = output_dir / "resolved_config.toml"
     results_path = output_dir / "results.json"
     report_path = output_dir / "report.md"
+    visualization_path = output_dir / "visualization.json"
+    artifact_index_path = output_dir / "artifact_index.json"
     write_resolved_config(config, resolved_config_path)
 
     results = _results_payload(
@@ -69,13 +76,69 @@ def run_generation(
         },
         report_path,
     )
+    _write_visualization_artifacts(
+        input_path=input_path,
+        output_dir=output_dir,
+        config=config,
+        candidates=candidates_with_outputs,
+        report_path=report_path,
+        results_path=results_path,
+        resolved_config_path=resolved_config_path,
+        visualization_path=visualization_path,
+        artifact_index_path=artifact_index_path,
+    )
     return GenerationRun(
         output_dir=output_dir,
         results_path=results_path,
         report_path=report_path,
         resolved_config_path=resolved_config_path,
+        visualization_path=visualization_path,
+        artifact_index_path=artifact_index_path,
         candidates=candidates_with_outputs,
         results=results,
+    )
+
+
+def _write_visualization_artifacts(
+    *,
+    input_path: Path,
+    output_dir: Path,
+    config: KithaironConfig,
+    candidates: tuple[CanonCandidate, ...],
+    report_path: Path,
+    results_path: Path,
+    resolved_config_path: Path,
+    visualization_path: Path,
+    artifact_index_path: Path,
+) -> None:
+    run_id = output_dir.name
+    run_artifacts = {
+        "report": str(report_path.relative_to(output_dir)),
+        "results": str(results_path.relative_to(output_dir)),
+        "visualization": str(visualization_path.relative_to(output_dir)),
+        "resolved_config": str(resolved_config_path.relative_to(output_dir)),
+    }
+    summary = materialize_run_summary(
+        run_id=run_id,
+        input_name=input_path.name,
+        created_at=datetime.now(UTC).isoformat(),
+        config_summary=config.to_json_dict(),
+        run_artifacts=run_artifacts,
+        candidates=candidates,
+    )
+    visualization_path.write_text(
+        json.dumps(summary.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    artifact_index = build_artifact_index(
+        run_id=run_id,
+        root=output_dir,
+        run_artifacts=run_artifacts,
+        candidates=candidates,
+    )
+    artifact_index_path.write_text(
+        json.dumps(artifact_index, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
 
 
