@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import type { CandidateViz, RunSummary } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
+import { ScoreView } from './ScoreView'
 import { UploadPanel } from './UploadPanel'
 
 export function KithaironAppShell() {
@@ -89,7 +90,18 @@ export function KithaironAppShell() {
                   </Badge>
                 ) : null}
               </Group>
-              <CandidateSummary candidate={selectedCandidate} runSummary={runSummary} />
+              {selectedCandidate !== null && runSummary !== null ? (
+                <Stack gap="md">
+                  <CandidateSummary candidate={selectedCandidate} runSummary={runSummary} />
+                  <ScoreView
+                    key={selectedCandidate.candidate_id}
+                    runId={runSummary.run_id}
+                    candidate={selectedCandidate}
+                  />
+                </Stack>
+              ) : (
+                <CandidateSummary candidate={selectedCandidate} runSummary={runSummary} />
+              )}
             </Paper>
             <Paper className="roll-surface" mih={240} p="md">
               <Text className="surface-title">Piano Roll</Text>

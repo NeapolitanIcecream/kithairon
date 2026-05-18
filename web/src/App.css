@@ -88,6 +88,29 @@
   letter-spacing: 0;
 }
 
+.score-loading {
+  min-height: 120px;
+}
+
+.score-svg-surface {
+  max-height: 620px;
+  overflow: auto;
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.score-svg {
+  min-width: 680px;
+  padding: 12px;
+}
+
+.score-svg svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;
