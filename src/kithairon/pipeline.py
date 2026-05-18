@@ -37,6 +37,15 @@ class GenerationRun:
     results: Mapping[str, Any]
 
 
+@dataclass(frozen=True)
+class RunArtifactPaths:
+    results: Path
+    report: Path
+    resolved_config: Path
+    visualization: Path
+    artifact_index: Path
+
+
 def run_generation(
     input_path: Path,
     output_dir: Path,
@@ -51,12 +60,14 @@ def run_generation(
     _prepare_output_dir(output_dir, overwrite_output=overwrite_output)
     candidates_with_outputs = _write_candidate_outputs(candidates, output_dir)
 
-    resolved_config_path = output_dir / "resolved_config.toml"
-    results_path = output_dir / "results.json"
-    report_path = output_dir / "report.md"
-    visualization_path = output_dir / "visualization.json"
-    artifact_index_path = output_dir / "artifact_index.json"
-    write_resolved_config(config, resolved_config_path)
+    artifact_paths = RunArtifactPaths(
+        results=output_dir / "results.json",
+        report=output_dir / "report.md",
+        resolved_config=output_dir / "resolved_config.toml",
+        visualization=output_dir / "visualization.json",
+        artifact_index=output_dir / "artifact_index.json",
+    )
+    write_resolved_config(config, artifact_paths.resolved_config)
 
     results = _results_payload(
         input_path=input_path,
@@ -65,7 +76,7 @@ def run_generation(
         engine=engine,
         candidates=candidates_with_outputs,
     )
-    results_path.write_text(
+    artifact_paths.results.write_text(
         json.dumps(results, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
@@ -74,26 +85,22 @@ def run_generation(
             **results,
             "candidates": report_candidate_rows(results["candidates"]),
         },
-        report_path,
+        artifact_paths.report,
     )
     _write_visualization_artifacts(
         input_path=input_path,
         output_dir=output_dir,
         config=config,
         candidates=candidates_with_outputs,
-        report_path=report_path,
-        results_path=results_path,
-        resolved_config_path=resolved_config_path,
-        visualization_path=visualization_path,
-        artifact_index_path=artifact_index_path,
+        paths=artifact_paths,
     )
     return GenerationRun(
         output_dir=output_dir,
-        results_path=results_path,
-        report_path=report_path,
-        resolved_config_path=resolved_config_path,
-        visualization_path=visualization_path,
-        artifact_index_path=artifact_index_path,
+        results_path=artifact_paths.results,
+        report_path=artifact_paths.report,
+        resolved_config_path=artifact_paths.resolved_config,
+        visualization_path=artifact_paths.visualization,
+        artifact_index_path=artifact_paths.artifact_index,
         candidates=candidates_with_outputs,
         results=results,
     )
@@ -105,19 +112,10 @@ def _write_visualization_artifacts(
     output_dir: Path,
     config: KithaironConfig,
     candidates: tuple[CanonCandidate, ...],
-    report_path: Path,
-    results_path: Path,
-    resolved_config_path: Path,
-    visualization_path: Path,
-    artifact_index_path: Path,
+    paths: RunArtifactPaths,
 ) -> None:
     run_id = output_dir.name
-    run_artifacts = {
-        "report": str(report_path.relative_to(output_dir)),
-        "results": str(results_path.relative_to(output_dir)),
-        "visualization": str(visualization_path.relative_to(output_dir)),
-        "resolved_config": str(resolved_config_path.relative_to(output_dir)),
-    }
+    run_artifacts = _run_artifact_manifest(output_dir, paths)
     summary = materialize_run_summary(
         run_id=run_id,
         input_name=input_path.name,
@@ -126,18 +124,28 @@ def _write_visualization_artifacts(
         run_artifacts=run_artifacts,
         candidates=candidates,
     )
-    visualization_path.write_text(
-        json.dumps(summary.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    _write_json(paths.visualization, summary.model_dump(mode="json"))
     artifact_index = build_artifact_index(
         run_id=run_id,
         root=output_dir,
         run_artifacts=run_artifacts,
         candidates=candidates,
     )
-    artifact_index_path.write_text(
-        json.dumps(artifact_index, indent=2, sort_keys=True) + "\n",
+    _write_json(paths.artifact_index, artifact_index)
+
+
+def _run_artifact_manifest(output_dir: Path, paths: RunArtifactPaths) -> dict[str, str]:
+    return {
+        "report": str(paths.report.relative_to(output_dir)),
+        "results": str(paths.results.relative_to(output_dir)),
+        "visualization": str(paths.visualization.relative_to(output_dir)),
+        "resolved_config": str(paths.resolved_config.relative_to(output_dir)),
+    }
+
+
+def _write_json(path: Path, payload: object) -> None:
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
