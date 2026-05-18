@@ -1,6 +1,6 @@
 # Development
 
-Use `uv` to create the environment, install dependencies, and run project tools.
+Use `uv` to install dependencies and run project tools.
 
 ## Set Up
 
@@ -8,13 +8,13 @@ Use `uv` to create the environment, install dependencies, and run project tools.
 uv sync
 ```
 
-Install optional solver dependencies when working on the CP-SAT engine:
+Install OR-Tools when working on the solver engine:
 
 ```bash
 uv sync --extra solver
 ```
 
-Install optional documentation dependencies when previewing the documentation site:
+Preview this documentation site:
 
 ```bash
 uv run --extra docs mkdocs serve
@@ -22,13 +22,13 @@ uv run --extra docs mkdocs serve
 
 ## Quality Checks
 
-Run these commands before handing off changes:
+Run the full local gate before handing off changes:
 
 ```bash
-uv run canonize --help
-uv run pytest
 uv run ruff check .
+uv run ruff format --check .
 uv run pyright
+uv run pytest
 ```
 
 ## Refactor Audit
@@ -43,7 +43,7 @@ uv run coverage json -o coverage.json
 uv run cremona scan --baseline quality/refactor-baseline.json --coverage-json coverage.json --fail-on-regression
 ```
 
-Open `output/refactor-audit/report.md` first when the gate fails. Refresh the baseline only after a real debt reduction or a Cremona baseline schema change:
+Open `output/refactor-audit/report.md` when the gate fails. Refresh the baseline only after a real debt reduction or a Cremona baseline schema change:
 
 ```bash
 uv run cremona scan --update-baseline
@@ -53,13 +53,25 @@ uv run cremona scan --update-baseline
 
 ```text
 src/kithairon/
-  __init__.py
+  adapters/
+  analysis/
+  engines/
+  rules/
+  scoring/
+  transforms/
   cli.py
+  config.py
+  export.py
+  ir.py
+  pipeline.py
+  report.py
 tests/
-  test_cli.py
-docs/
-  index.md
-  development.md
+  unit/
+  property/
+  integration/
+  golden/
+examples/
+  melodies/
 quality/
   refactor-baseline.json
 ```

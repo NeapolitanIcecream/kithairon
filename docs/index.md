@@ -1,25 +1,34 @@
 # Kithairon
 
-Kithairon is a symbolic music compiler for turning a monophonic melody into playable, explainable canon variants. The first implementation target is a two-voice canon pipeline that reads MIDI or MusicXML, creates strict canon candidates, scores them with explicit harmony and voice-leading rules, and later falls back to repair or solver engines when strict candidates are weak.
+Kithairon turns a monophonic MIDI or MusicXML melody into playable two-voice canon candidates. It enumerates strict canon transforms, scores the results with explicit harmony and voice-leading rules, and can produce relaxed repair or CP-SAT solver candidates when strict results are weak.
 
-This repository is currently at the project skeleton stage. The package, CLI entry point, development tools, and documentation shell are in place; the music parsing and generation pipeline will be added in later implementation steps.
+Use the CLI:
 
-## Planned Input
+```bash
+uv run canonize validate examples/melodies/scale_c_major.musicxml
+uv run canonize generate examples/melodies/scale_c_major.musicxml --out tmp/strict --engine strict
+```
+
+Each generation run writes:
+
+- `results.json`
+- `report.md`
+- `resolved_config.toml`
+- `candidates/*.musicxml`
+- `candidates/*.mid`
+
+## Supported Input
 
 - MIDI: `.mid`, `.midi`
 - MusicXML: `.musicxml`, `.xml`, `.mxl`
 
-The initial parser will expect a monophonic melody. Polyphonic input and chords will be rejected by default, with configurable policies planned for selecting the top or bottom note.
+Inputs are monophonic by default. Chord input fails unless you set `--chord-policy top-note` or `--chord-policy bottom-note`.
 
-## Planned Output
+## Engines
 
-Each generation run will write a directory containing a Markdown report, JSON results, the resolved configuration, and one MIDI plus one MusicXML file per exported candidate.
+- `strict`: exact transform of the input melody, marked `canon_label: "strict canon"`.
+- `repair`: local follower-note edits from a strict candidate, marked `canon_label: "relaxed canon"`.
+- `solver`: optional OR-Tools CP-SAT relaxed candidate search.
+- `auto`: strict first, then repair, and solver only when `[solver].enabled = true` and the dependency is installed.
 
-## Project Commands
-
-```bash
-uv run canonize --help
-uv run pytest
-uv run ruff check .
-uv run pyright
-```
+See the repository README for command examples and output details.
