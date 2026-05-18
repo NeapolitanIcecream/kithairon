@@ -53,3 +53,7 @@ class ConfigError(KithaironError):
 
 class ParseError(KithaironError):
     """Raised when an input score cannot be converted to Kithairon IR."""
+
+
+class TransformError(KithaironError):
+    """Raised when a melody transform cannot be applied."""
