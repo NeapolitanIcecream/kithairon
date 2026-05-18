@@ -35,6 +35,12 @@ Generated candidates: {{ candidates | length }}
 {% else -%}
 - No penalties.
 {% endif %}
+{% if c.e %}
+Edit plan:
+{% for edit in c.e -%}
+- `{{ edit.event_id }}` {{ edit.operation }}: {{ edit.from_pitch }} -> {{ edit.to_pitch }}
+{% endfor -%}
+{% endif %}
 
 {% endfor -%}
 """
@@ -65,6 +71,7 @@ def _report_candidate_row(candidate: Mapping[str, Any]) -> dict[str, Any]:
         "t": _transform_summary(transform),
         "o": f"[MusicXML]({outputs['musicxml']}), [MIDI]({outputs['midi']})",
         "p": _top_penalties(candidate),
+        "e": _edit_plan(candidate),
     }
 
 
@@ -74,6 +81,14 @@ def _top_penalties(candidate: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     if not isinstance(top_penalties, list):
         return []
     return [_mapping(item) for item in cast(list[object], top_penalties)]
+
+
+def _edit_plan(candidate: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    metadata = _mapping(candidate.get("metadata", {}))
+    edit_plan = metadata.get("edit_plan", [])
+    if not isinstance(edit_plan, list):
+        return []
+    return [_mapping(item) for item in cast(list[object], edit_plan)]
 
 
 def _transform_summary(transform: Mapping[str, Any]) -> str:

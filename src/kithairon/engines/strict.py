@@ -16,7 +16,14 @@ class StrictEngine:
     config: KithaironConfig
 
     def generate(self, melody: Melody) -> tuple[CanonCandidate, ...]:
-        scored_candidates = tuple(
+        scored_candidates = self.generate_pool(melody)
+        return rank_candidates(
+            scored_candidates,
+            top_k=self.config.generation.top_k,
+        )
+
+    def generate_pool(self, melody: Melody) -> tuple[CanonCandidate, ...]:
+        return tuple(
             score_candidate(
                 _candidate_from_transform(melody, spec, index),
                 quality=self.config.quality,
@@ -26,10 +33,6 @@ class StrictEngine:
                 start=1,
             )
         )
-        return rank_candidates(
-            scored_candidates,
-            top_k=self.config.generation.top_k,
-        )
 
 
 def generate_strict_candidates(
@@ -37,6 +40,13 @@ def generate_strict_candidates(
     config: KithaironConfig,
 ) -> tuple[CanonCandidate, ...]:
     return StrictEngine(config).generate(melody)
+
+
+def generate_strict_candidate_pool(
+    melody: Melody,
+    config: KithaironConfig,
+) -> tuple[CanonCandidate, ...]:
+    return StrictEngine(config).generate_pool(melody)
 
 
 def _candidate_from_transform(

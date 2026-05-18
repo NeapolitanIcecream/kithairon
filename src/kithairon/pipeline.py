@@ -11,10 +11,11 @@ from typing import Any, cast
 
 from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import KithaironConfig, format_fraction, write_resolved_config
+from kithairon.engines.repair import generate_repair_candidates
 from kithairon.engines.strict import generate_strict_candidates, transform_spec_to_dict
 from kithairon.errors import GenerationError
 from kithairon.export import CandidateExportPaths, write_candidate_exports
-from kithairon.ir import CanonCandidate, RuleViolation
+from kithairon.ir import CanonCandidate, Melody, RuleViolation
 from kithairon.report import report_candidate_rows, write_report
 
 
@@ -34,16 +35,9 @@ def run_generation(
     config: KithaironConfig,
 ) -> GenerationRun:
     engine = "strict" if config.generation.engine == "auto" else config.generation.engine
-    if engine != "strict":
-        raise GenerationError(
-            f"Generation engine is not implemented yet: {engine}",
-            code="generation_engine_not_implemented",
-            details={"engine": engine},
-        )
-
     output_dir.mkdir(parents=True, exist_ok=True)
     melody = parse_melody(input_path, config.input)
-    candidates = generate_strict_candidates(melody, config)
+    candidates = _generate_candidates(melody, config, engine)
     candidates_with_outputs = _write_candidate_outputs(candidates, output_dir)
 
     resolved_config_path = output_dir / "resolved_config.toml"
@@ -76,6 +70,31 @@ def run_generation(
         resolved_config_path=resolved_config_path,
         candidates=candidates_with_outputs,
         results=results,
+    )
+
+
+def _generate_candidates(
+    melody: object,
+    config: KithaironConfig,
+    engine: str,
+) -> tuple[CanonCandidate, ...]:
+    if not isinstance(melody, Melody):
+        raise TypeError("expected Melody")
+    if engine == "strict":
+        return generate_strict_candidates(melody, config)
+    if engine == "repair":
+        candidates = generate_repair_candidates(melody, config)
+        if not candidates:
+            raise GenerationError(
+                "Repair engine could not improve any strict candidate.",
+                code="repair_no_candidates",
+                details={"engine": engine},
+            )
+        return candidates
+    raise GenerationError(
+        f"Generation engine is not implemented yet: {engine}",
+        code="generation_engine_not_implemented",
+        details={"engine": engine},
     )
 
 
