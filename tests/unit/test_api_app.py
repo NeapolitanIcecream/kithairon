@@ -10,7 +10,7 @@ from kithairon.api.app import cli, create_app
 
 
 def test_canonize_web_help_documents_server_options() -> None:
-    result = CliRunner().invoke(cli, ["--help"])
+    result = CliRunner().invoke(cli, ["--help"], terminal_width=160, color=False)
 
     assert result.exit_code == 0, result.stdout
     assert "--output-root" in result.stdout
