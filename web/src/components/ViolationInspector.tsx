@@ -14,6 +14,8 @@ import type { CandidateViz, ViolationViz } from '../api/schemas'
 type ViolationInspectorProps = {
   candidate: CandidateViz | null
   selectedViolationId: string | null
+  categoryFilter: string
+  onCategoryFilterChange: (category: string) => void
   onSelectViolation: (violation: ViolationViz) => void
 }
 
@@ -27,10 +29,11 @@ const severityOptions = [
 export function ViolationInspector({
   candidate,
   selectedViolationId,
+  categoryFilter,
+  onCategoryFilterChange,
   onSelectViolation,
 }: ViolationInspectorProps) {
   const [severityFilter, setSeverityFilter] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
   const categoryOptions = useMemo(() => {
     const categories = Array.from(
       new Set((candidate?.violations ?? []).map((violation) => violation.category)),
@@ -76,7 +79,7 @@ export function ViolationInspector({
           data={categoryOptions}
           value={categoryFilter}
           allowDeselect={false}
-          onChange={(value) => setCategoryFilter(value ?? 'all')}
+          onChange={(value) => onCategoryFilterChange(value ?? 'all')}
         />
       </Group>
 

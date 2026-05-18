@@ -201,6 +201,35 @@
   text-align: right;
 }
 
+.score-breakdown {
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.breakdown-table {
+  font-size: 13px;
+}
+
+.breakdown-table tr[data-selected='true'] {
+  background: #eef7f9;
+}
+
+.breakdown-filter {
+  width: 100%;
+  color: #1f2933;
+  font: inherit;
+  text-align: left;
+}
+
+.breakdown-value {
+  width: 72px;
+  color: #1f2933;
+  font-weight: 700;
+  text-align: right;
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;

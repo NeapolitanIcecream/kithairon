@@ -14,6 +14,7 @@ import {
 import type { CandidateViz, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
 import { PianoRollView } from './PianoRollView'
+import { ScoreBreakdown } from './ScoreBreakdown'
 import { ScoreView } from './ScoreView'
 import { UploadPanel } from './UploadPanel'
 import { ViolationInspector } from './ViolationInspector'
@@ -23,6 +24,7 @@ export function KithaironAppShell() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
+  const [violationCategoryFilter, setViolationCategoryFilter] = useState('all')
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
@@ -44,12 +46,14 @@ export function KithaironAppShell() {
     setSelectedCandidateId(nextRunSummary.candidates[0]?.candidate_id ?? null)
     setSelectedEventId(null)
     setSelectedViolationId(null)
+    setViolationCategoryFilter('all')
   }
 
   function handleCandidateSelect(candidateId: string) {
     setSelectedCandidateId(candidateId)
     setSelectedEventId(null)
     setSelectedViolationId(null)
+    setViolationCategoryFilter('all')
   }
 
   function handleEventSelect(eventId: string) {
@@ -155,9 +159,20 @@ export function KithaironAppShell() {
           <Paper className="inspector-surface" mih={596} p="md">
             <Text className="surface-title">Inspector</Text>
             <SelectedEventPreview candidate={selectedCandidate} selectedEventId={selectedEventId} />
+            {selectedCandidate !== null ? (
+              <Box mt="md">
+                <ScoreBreakdown
+                  score={selectedCandidate.score}
+                  activeCategory={violationCategoryFilter}
+                  onCategoryFilterChange={setViolationCategoryFilter}
+                />
+              </Box>
+            ) : null}
             <ViolationInspector
               candidate={selectedCandidate}
               selectedViolationId={selectedViolationId}
+              categoryFilter={violationCategoryFilter}
+              onCategoryFilterChange={setViolationCategoryFilter}
               onSelectViolation={handleViolationSelect}
             />
           </Paper>

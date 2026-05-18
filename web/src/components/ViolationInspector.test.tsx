@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { MantineProvider } from '@mantine/core'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CandidateViz, ViolationViz } from '../api/schemas'
 import { ViolationInspector } from './ViolationInspector'
 
@@ -23,6 +23,10 @@ describe('ViolationInspector', () => {
     })
   })
 
+  afterEach(() => {
+    cleanup()
+  })
+
   it('selects violations with their full visualization payload', async () => {
     const onSelectViolation = vi.fn()
     render(
@@ -30,6 +34,8 @@ describe('ViolationInspector', () => {
         <ViolationInspector
           candidate={candidate()}
           selectedViolationId={null}
+          categoryFilter="all"
+          onCategoryFilterChange={vi.fn()}
           onSelectViolation={onSelectViolation}
         />
       </MantineProvider>,
@@ -43,6 +49,23 @@ describe('ViolationInspector', () => {
         event_ids: ['follower:n0001', 'follower:n0002'],
       }),
     )
+  })
+
+  it('applies the linked category filter', () => {
+    render(
+      <MantineProvider>
+        <ViolationInspector
+          candidate={candidate()}
+          selectedViolationId={null}
+          categoryFilter="range"
+          onCategoryFilterChange={vi.fn()}
+          onSelectViolation={vi.fn()}
+        />
+      </MantineProvider>,
+    )
+
+    expect(screen.getAllByText('range').length).toBeGreaterThan(0)
+    expect(screen.queryByText('large_leap')).toBeNull()
   })
 })
 
