@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
+import { ExportMenu } from './ExportMenu'
 import { PianoRollView } from './PianoRollView'
 import { PlaybackControls } from './PlaybackControls'
 import { ScoreBreakdown } from './ScoreBreakdown'
@@ -205,6 +206,9 @@ export function KithaironAppShell() {
                 />
               </Box>
             ) : null}
+            <Box mt="md">
+              <ExportMenu runSummary={runSummary} candidate={selectedCandidate} />
+            </Box>
             <StrictRelaxedDiff
               candidate={selectedCandidate}
               selectedActionId={selectedRepairActionId}
