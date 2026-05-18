@@ -1,0 +1,59 @@
+.app-root {
+  min-height: 100vh;
+  background: #f6f7f8;
+}
+
+.app-header {
+  border-bottom: 1px solid #d9dee2;
+  background: #ffffff;
+}
+
+.app-title {
+  color: #1f2933;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.app-subtitle {
+  color: #5b6670;
+  font-size: 13px;
+}
+
+.app-navbar {
+  border-right: 1px solid #d9dee2;
+  background: #ffffff;
+}
+
+.app-main {
+  background: #f6f7f8;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+.score-surface,
+.roll-surface,
+.inspector-surface,
+.candidate-surface {
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.surface-title {
+  color: #28323c;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+@media (max-width: 920px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
