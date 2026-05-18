@@ -7,6 +7,7 @@ from typing import Annotated, Any, cast
 from uuid import uuid4
 
 import typer
+from pydantic import BaseModel, Field
 from rich.console import Console
 
 from kithairon import __version__
@@ -17,6 +18,12 @@ from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
     resolve_candidate_artifact,
     resolve_run_artifact,
+    update_candidate_artifacts,
+)
+from kithairon.visualization.export_score import (
+    ExternalScoreRenderError,
+    RenderFormat,
+    render_with_musescore,
 )
 
 console = Console()
@@ -70,6 +77,11 @@ class ApiSettings:
     cors_origins: tuple[str, ...] = ()
     read_only: bool = False
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES
+    musescore_bin: Path | None = None
+
+
+class RenderRequest(BaseModel):
+    formats: list[RenderFormat] = Field(min_length=1)
 
 
 class ApiError(Exception):
@@ -96,6 +108,7 @@ def create_app(
     cors_origins: tuple[str, ...] = (),
     read_only: bool = False,
     max_upload_bytes: int = DEFAULT_MAX_UPLOAD_BYTES,
+    musescore_bin: Path | None = None,
 ) -> Any:
     """Create the visualization FastAPI application."""
     from fastapi import FastAPI, File, Form, Request, UploadFile
@@ -108,6 +121,7 @@ def create_app(
         cors_origins=cors_origins,
         read_only=read_only,
         max_upload_bytes=max_upload_bytes,
+        musescore_bin=musescore_bin,
     )
     app.state.settings = settings
 
@@ -263,6 +277,39 @@ def create_app(
     def get_candidate_midi(run_id: str, candidate_id: str) -> FileResponse:
         return get_candidate_artifact(run_id, candidate_id, "midi")
 
+    def render_candidate(
+        run_id: str,
+        candidate_id: str,
+        request: RenderRequest,
+    ) -> dict[str, object]:
+        if settings.musescore_bin is None:
+            raise ApiError(
+                "MuseScore CLI is not configured. Set MUSESCORE_BIN or --musescore-bin.",
+                code="external_renderer_unavailable",
+                status_code=503,
+            )
+        index_path = _artifact_index_path(settings, run_id)
+        musicxml_path = resolve_candidate_artifact(index_path, candidate_id, "musicxml")
+        rendered: dict[str, str] = {}
+        for fmt in request.formats:
+            output_path = _render_output_path(settings, run_id, candidate_id, fmt)
+            try:
+                render_with_musescore(
+                    musicxml_path,
+                    output_path,
+                    fmt,
+                    settings.musescore_bin,
+                )
+            except ExternalScoreRenderError as exc:
+                raise ApiError(
+                    str(exc),
+                    code="external_renderer_failed",
+                    status_code=502,
+                ) from exc
+            rendered[fmt] = str(output_path.relative_to(_run_dir(settings, run_id)))
+        update_candidate_artifacts(index_path, candidate_id, rendered)
+        return {"candidate_id": candidate_id, "artifacts": rendered}
+
     app.add_api_route("/api/runs/{run_id}", get_run, methods=["GET"])
     app.add_api_route("/api/runs/{run_id}/visualization", get_run_visualization, methods=["GET"])
     app.add_api_route("/api/runs/{run_id}/artifact/{kind}", get_run_artifact, methods=["GET"])
@@ -285,6 +332,11 @@ def create_app(
         "/api/runs/{run_id}/candidates/{candidate_id}/artifact/{kind}",
         get_candidate_artifact,
         methods=["GET"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}/render",
+        render_candidate,
+        methods=["POST"],
     )
     return app
 
@@ -309,6 +361,7 @@ def serve(
         output_root=output_root,
         cors_origins=tuple(cors_origin or ()),
         read_only=read_only,
+        musescore_bin=musescore_bin,
     )
     console.print(f"Serving Kithairon visualization API on http://{host}:{port}")
     uvicorn.run(
@@ -420,3 +473,20 @@ def _download_response(path: Path) -> Any:
             details={"path": str(path)},
         )
     return FileResponse(path, filename=path.name)
+
+
+def _render_output_path(
+    settings: ApiSettings,
+    run_id: str,
+    candidate_id: str,
+    fmt: RenderFormat,
+) -> Path:
+    safe_candidate_id = Path(candidate_id).name
+    if safe_candidate_id != candidate_id or candidate_id in {"", ".", ".."}:
+        raise ApiError(
+            "Candidate id is not valid.",
+            code="invalid_candidate_id",
+            status_code=400,
+            details={"candidate_id": candidate_id},
+        )
+    return _run_dir(settings, run_id) / "renders" / candidate_id / f"{candidate_id}.{fmt}"
