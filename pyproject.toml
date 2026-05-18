@@ -40,6 +40,7 @@ build-backend = "uv_build"
 dev = [
     "coverage>=7.14.0",
     "cremona",
+    "httpx>=0.28.1",
     "hypothesis>=6.152.7",
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
