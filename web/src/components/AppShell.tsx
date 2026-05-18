@@ -13,12 +13,14 @@ import {
 } from '@mantine/core'
 import type { CandidateViz, RunSummary } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
+import { PianoRollView } from './PianoRollView'
 import { ScoreView } from './ScoreView'
 import { UploadPanel } from './UploadPanel'
 
 export function KithaironAppShell() {
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
@@ -29,6 +31,12 @@ export function KithaironAppShell() {
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
     setSelectedCandidateId(nextRunSummary.candidates[0]?.candidate_id ?? null)
+    setSelectedEventId(null)
+  }
+
+  function handleCandidateSelect(candidateId: string) {
+    setSelectedCandidateId(candidateId)
+    setSelectedEventId(null)
   }
 
   return (
@@ -72,7 +80,7 @@ export function KithaironAppShell() {
             <CandidateTable
               candidates={candidates}
               selectedCandidateId={selectedCandidateId}
-              onSelectCandidate={setSelectedCandidateId}
+              onSelectCandidate={handleCandidateSelect}
             />
           </Paper>
         </Stack>
@@ -105,18 +113,27 @@ export function KithaironAppShell() {
             </Paper>
             <Paper className="roll-surface" mih={240} p="md">
               <Text className="surface-title">Piano Roll</Text>
-              <EmptyWorkSurface
-                message={
-                  selectedCandidate === null
-                    ? 'No candidate selected.'
-                    : 'Timeline not available.'
-                }
-              />
+              <Box mt="md">
+                <PianoRollView
+                  key={selectedCandidate?.candidate_id ?? 'empty'}
+                  candidate={selectedCandidate}
+                  selectedEventId={selectedEventId}
+                  onSelectEvent={setSelectedEventId}
+                />
+              </Box>
+              {selectedEventId !== null ? (
+                <Text className="empty-surface" mt="sm">
+                  Selected {selectedEventId}
+                </Text>
+              ) : null}
             </Paper>
           </Stack>
           <Paper className="inspector-surface" mih={596} p="md">
             <Text className="surface-title">Inspector</Text>
-            <InspectorPreview candidate={selectedCandidate} />
+            <InspectorPreview
+              candidate={selectedCandidate}
+              selectedEventId={selectedEventId}
+            />
           </Paper>
         </Box>
       </AppShell.Main>
@@ -172,9 +189,28 @@ function CandidateSummary({ candidate, runSummary }: CandidateSummaryProps) {
   )
 }
 
-function InspectorPreview({ candidate }: { candidate: CandidateViz | null }) {
+function InspectorPreview({
+  candidate,
+  selectedEventId,
+}: {
+  candidate: CandidateViz | null
+  selectedEventId: string | null
+}) {
   if (candidate === null) {
     return <EmptyWorkSurface message="No candidate selected." />
+  }
+
+  const selectedNote = candidate.notes.find((note) => note.event_id === selectedEventId)
+  if (selectedNote !== undefined) {
+    return (
+      <Stack gap="sm" mt="md">
+        <Text fw={700}>{selectedNote.event_id}</Text>
+        <Text size="sm">{selectedNote.pitch_name ?? 'Rest'}</Text>
+        <Text size="sm" c="dimmed">
+          Start {selectedNote.start_q.text} / End {selectedNote.end_q.text}
+        </Text>
+      </Stack>
+    )
   }
 
   const firstViolation = candidate.violations[0]

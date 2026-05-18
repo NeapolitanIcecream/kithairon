@@ -111,6 +111,73 @@
   height: auto;
 }
 
+.piano-roll-pan {
+  width: min(280px, 42vw);
+}
+
+.piano-roll-svg {
+  display: block;
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.piano-roll-background {
+  fill: #fbfcfd;
+}
+
+.piano-roll-lane {
+  fill: transparent;
+  stroke: #e3e7eb;
+  stroke-width: 1;
+}
+
+.piano-roll-lane-label,
+.piano-roll-grid-label {
+  fill: #66737f;
+  font-size: 12px;
+}
+
+.piano-roll-grid {
+  stroke-width: 1;
+}
+
+.beat-line {
+  stroke: #edf0f2;
+}
+
+.bar-line {
+  stroke: #bdc7cf;
+}
+
+.piano-roll-note {
+  cursor: pointer;
+  stroke: rgba(31, 41, 51, 0.36);
+  stroke-width: 1;
+}
+
+.leader-note {
+  fill: #267a8f;
+}
+
+.follower-note {
+  fill: #8a6f1d;
+}
+
+.rest-note {
+  fill: #7a8490;
+}
+
+.hovered-note,
+.selected-note {
+  stroke: #111827;
+  stroke-width: 2;
+}
+
+.selected-note {
+  filter: drop-shadow(0 0 3px rgba(17, 24, 39, 0.35));
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;
