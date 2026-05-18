@@ -16,10 +16,17 @@ dependencies = [
 
 [project.scripts]
 canonize = "kithairon.cli:main"
+canonize-web = "kithairon.api.app:main"
 
 [project.optional-dependencies]
 solver = [
     "ortools>=9.15.6755",
+]
+visual = [
+    "fastapi>=0.115",
+    "orjson>=3.10",
+    "python-multipart>=0.0.12",
+    "uvicorn[standard]>=0.32",
 ]
 docs = [
     "mkdocs-material>=9.7.6",
