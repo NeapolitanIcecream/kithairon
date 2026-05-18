@@ -44,6 +44,7 @@ describe('PianoRollView', () => {
         <PianoRollView
           candidate={candidate()}
           selectedEventIds={[]}
+          modifiedEventIds={[]}
           onSelectEvent={onSelectEvent}
         />
       </MantineProvider>,

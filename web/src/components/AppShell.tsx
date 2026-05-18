@@ -11,12 +11,13 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import type { CandidateViz, RunSummary, ViolationViz } from '../api/schemas'
+import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
 import { PianoRollView } from './PianoRollView'
 import { PlaybackControls } from './PlaybackControls'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { ScoreView } from './ScoreView'
+import { StrictRelaxedDiff } from './StrictRelaxedDiff'
 import { UploadPanel } from './UploadPanel'
 import { ViolationInspector } from './ViolationInspector'
 
@@ -25,6 +26,7 @@ export function KithaironAppShell() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
+  const [selectedRepairActionId, setSelectedRepairActionId] = useState<string | null>(null)
   const [violationCategoryFilter, setViolationCategoryFilter] = useState('all')
   const [activePlaybackEventIds, setActivePlaybackEventIds] = useState<string[]>([])
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
@@ -40,16 +42,28 @@ export function KithaironAppShell() {
       ) ?? null,
     [selectedCandidate, selectedViolationId],
   )
+  const selectedRepairAction = useMemo(
+    () =>
+      selectedCandidate?.repair_actions.find(
+        (action) => action.action_id === selectedRepairActionId,
+      ) ?? null,
+    [selectedCandidate, selectedRepairActionId],
+  )
   const highlightedEventIds = uniqueEventIds([
     ...(selectedViolation?.event_ids ?? (selectedEventId === null ? [] : [selectedEventId])),
+    ...repairActionEventIds(selectedRepairAction),
     ...activePlaybackEventIds,
   ])
+  const modifiedEventIds = uniqueEventIds(
+    selectedCandidate?.repair_actions.flatMap(repairActionEventIds) ?? [],
+  )
 
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
     setSelectedCandidateId(nextRunSummary.candidates[0]?.candidate_id ?? null)
     setSelectedEventId(null)
     setSelectedViolationId(null)
+    setSelectedRepairActionId(null)
     setViolationCategoryFilter('all')
     setActivePlaybackEventIds([])
   }
@@ -58,6 +72,7 @@ export function KithaironAppShell() {
     setSelectedCandidateId(candidateId)
     setSelectedEventId(null)
     setSelectedViolationId(null)
+    setSelectedRepairActionId(null)
     setViolationCategoryFilter('all')
     setActivePlaybackEventIds([])
   }
@@ -65,11 +80,19 @@ export function KithaironAppShell() {
   function handleEventSelect(eventId: string) {
     setSelectedEventId(eventId)
     setSelectedViolationId(null)
+    setSelectedRepairActionId(null)
   }
 
   function handleViolationSelect(violation: ViolationViz) {
     setSelectedViolationId(violation.violation_id)
+    setSelectedRepairActionId(null)
     setSelectedEventId(violation.event_ids[0] ?? null)
+  }
+
+  function handleRepairActionSelect(action: RepairAction) {
+    setSelectedRepairActionId(action.action_id)
+    setSelectedViolationId(null)
+    setSelectedEventId(action.new_event_id ?? action.original_event_id)
   }
 
   return (
@@ -159,6 +182,7 @@ export function KithaironAppShell() {
                   key={selectedCandidate?.candidate_id ?? 'empty'}
                   candidate={selectedCandidate}
                   selectedEventIds={highlightedEventIds}
+                  modifiedEventIds={modifiedEventIds}
                   onSelectEvent={handleEventSelect}
                 />
               </Box>
@@ -181,6 +205,11 @@ export function KithaironAppShell() {
                 />
               </Box>
             ) : null}
+            <StrictRelaxedDiff
+              candidate={selectedCandidate}
+              selectedActionId={selectedRepairActionId}
+              onSelectAction={handleRepairActionSelect}
+            />
             <ViolationInspector
               candidate={selectedCandidate}
               selectedViolationId={selectedViolationId}
@@ -281,4 +310,13 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function uniqueEventIds(eventIds: string[]): string[] {
   return Array.from(new Set(eventIds))
+}
+
+function repairActionEventIds(action: RepairAction | null): string[] {
+  if (action === null) {
+    return []
+  }
+  return [action.original_event_id, action.new_event_id].filter(
+    (eventId): eventId is string => eventId !== null,
+  )
 }

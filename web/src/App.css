@@ -168,6 +168,12 @@
   fill: #7a8490;
 }
 
+.modified-note {
+  stroke: #b45309;
+  stroke-dasharray: 4 2;
+  stroke-width: 2;
+}
+
 .hovered-note,
 .selected-note {
   stroke: #111827;
@@ -206,6 +212,21 @@
   border-radius: 8px;
   padding: 10px;
   background: #ffffff;
+}
+
+.strict-relaxed-diff,
+.repair-action-row {
+  width: 100%;
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  text-align: left;
+}
+
+.repair-action-row[data-selected='true'] {
+  border-color: #b45309;
+  background: #fff7ed;
 }
 
 .breakdown-table {
