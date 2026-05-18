@@ -52,6 +52,42 @@
   text-transform: uppercase;
 }
 
+.candidate-table {
+  min-width: 820px;
+}
+
+.candidate-row[data-selected='true'] {
+  background: #eef5f8;
+}
+
+.candidate-select {
+  width: 100%;
+  color: #1f2933;
+}
+
+.candidate-heading {
+  color: #1f2933;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.metric {
+  min-width: 86px;
+}
+
+.metric-label,
+.empty-surface {
+  color: #66737f;
+  font-size: 13px;
+}
+
+.metric-value {
+  color: #1f2933;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 @media (max-width: 920px) {
   .workspace-grid {
     grid-template-columns: 1fr;
