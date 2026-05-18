@@ -42,9 +42,7 @@ def _candidate(time_signature: str = "4/4") -> CanonCandidate:
 
 
 def test_build_time_slices_tracks_active_events_across_beat_boundaries() -> None:
-    sustained = _melody(
-        (NoteEvent(id="upper", pitch=60, start=Fraction(0), duration=Fraction(4)),)
-    )
+    sustained = _melody((NoteEvent(id="upper", pitch=60, start=Fraction(0), duration=Fraction(4)),))
     pulse = _melody(
         (
             NoteEvent(id="lower1", pitch=48, start=Fraction(0), duration=Fraction(1)),

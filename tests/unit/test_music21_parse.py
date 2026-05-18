@@ -17,6 +17,23 @@ from tests.music_helpers import (
 )
 
 
+def test_missing_input_raises_clear_parse_error(tmp_path: Path) -> None:
+    with pytest.raises(ParseError) as raised:
+        parse_melody(tmp_path / "missing.musicxml")
+
+    assert raised.value.to_diagnostic()["code"] == "input_not_found"
+
+
+def test_unsupported_input_suffix_raises_clear_parse_error(tmp_path: Path) -> None:
+    path = tmp_path / "melody.txt"
+    path.write_text("not a score", encoding="utf-8")
+
+    with pytest.raises(ParseError) as raised:
+        parse_melody(path)
+
+    assert raised.value.to_diagnostic()["code"] == "unsupported_input_format"
+
+
 def test_parse_musicxml_converts_notes_rests_and_metadata(tmp_path: Path) -> None:
     path = write_score(melody_score(), tmp_path / "melody.musicxml")
 

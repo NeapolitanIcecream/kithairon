@@ -1,0 +1,32 @@
+{
+  "candidate": {
+    "engine": "strict",
+    "id": "strict_0156",
+    "outputs": {
+      "midi": "candidates/001_strict_diminution_delay_8_interval_0.mid",
+      "musicxml": "candidates/001_strict_diminution_delay_8_interval_0.musicxml"
+    },
+    "quality_status": "good",
+    "rank": 1,
+    "score": 100.0,
+    "score_breakdown": {
+      "base_score": 100.0,
+      "final_score": 100.0,
+      "penalties": [],
+      "top_penalties": [],
+      "total_penalty": 0
+    },
+    "strict_canon": true,
+    "transform_spec": {
+      "delay": "8",
+      "interval": 0,
+      "inversion_axis": null,
+      "octave_displacement": 0,
+      "rhythm_scale": "1/2",
+      "transform_mode": "diminution",
+      "transpose_mode": "chromatic"
+    },
+    "violations": []
+  },
+  "engine": "strict"
+}

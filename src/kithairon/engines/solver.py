@@ -88,8 +88,7 @@ class CPSATSolverEngine:
             return SolverOutcome(candidate=None, details={"status": "NO_VARIABLES"})
 
         model.add(
-            sum(_edited_literal(plan) for plan in note_plans)
-            <= self.config.solver.max_edited_notes
+            sum(_edited_literal(plan) for plan in note_plans) <= self.config.solver.max_edited_notes
         )
         objective_terms = _objective_terms(note_plans)
         model.minimize(sum(objective_terms))
@@ -273,11 +272,7 @@ def _objective_terms(note_plans: tuple[SolverNotePlan, ...]) -> tuple[Any, ...]:
 
 def _edited_literal(plan: SolverNotePlan) -> Any:
     base_index = next(
-        (
-            index
-            for index, option in enumerate(plan.options)
-            if option.pitch == plan.event.pitch
-        ),
+        (index for index, option in enumerate(plan.options) if option.pitch == plan.event.pitch),
         None,
     )
     if base_index is None:
@@ -290,9 +285,7 @@ def _solution_to_melody(
     note_plans: tuple[SolverNotePlan, ...],
     solver: Any,
 ) -> Melody:
-    pitch_by_event_id = {
-        plan.event.id: _selected_option(plan, solver).pitch for plan in note_plans
-    }
+    pitch_by_event_id = {plan.event.id: _selected_option(plan, solver).pitch for plan in note_plans}
     return replace(
         melody,
         events=tuple(

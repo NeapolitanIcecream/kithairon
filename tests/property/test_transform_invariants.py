@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from typing import cast
 
 from hypothesis import given
 from hypothesis import strategies as st
 
-from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformSpec, Voice
+from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformMode, TransformSpec, Voice
 from kithairon.transforms.apply import apply_transform
 
 
@@ -35,6 +36,29 @@ def monophonic_melodies(draw: st.DrawFn) -> Melody:
         )
         start += duration
     return Melody(events=tuple(events), time_signature="4/4")
+
+
+@st.composite
+def transform_specs(draw: st.DrawFn) -> TransformSpec:
+    mode = draw(
+        st.sampled_from(
+            [
+                "identity",
+                "transposition",
+                "inversion",
+                "retrograde",
+                "augmentation",
+                "diminution",
+            ]
+        )
+    )
+    return TransformSpec(
+        delay=Fraction(draw(st.integers(min_value=0, max_value=8))),
+        interval=draw(st.integers(min_value=-12, max_value=12)),
+        transform_mode=cast(TransformMode, mode),
+        inversion_axis=draw(st.one_of(st.none(), st.integers(min_value=48, max_value=84))),
+        rhythm_scale=draw(st.sampled_from([Fraction(1, 2), Fraction(1), Fraction(2)])),
+    )
 
 
 @given(monophonic_melodies(), st.integers(min_value=-12, max_value=12))
@@ -142,6 +166,20 @@ def test_strict_candidate_follower_equals_apply_transform(melody: Melody, interv
     )
 
     assert candidate.voices[1].melody == apply_transform(candidate.voices[0].melody, spec)
+
+
+@given(monophonic_melodies(), transform_specs())
+def test_transform_preserves_monophonic_non_overlapping_timeline(
+    melody: Melody,
+    spec: TransformSpec,
+) -> None:
+    transformed = apply_transform(melody, spec)
+
+    previous_end = Fraction(0)
+    for event in transformed.events:
+        assert event.duration > 0
+        assert event.start >= previous_end
+        previous_end = event.start + event.duration
 
 
 def melody_total_duration(melody: Melody) -> Fraction:

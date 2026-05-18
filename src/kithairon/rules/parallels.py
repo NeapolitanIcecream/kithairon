@@ -41,9 +41,7 @@ def _violation_for_quartet(
         parallel_types.append("unison")
 
     event_ids = tuple(
-        sorted(
-            set(quartet.previous_event_ids.values()) | set(quartet.current_event_ids.values())
-        )
+        sorted(set(quartet.previous_event_ids.values()) | set(quartet.current_event_ids.values()))
     )
     return RuleViolation(
         rule_id=rule_id,

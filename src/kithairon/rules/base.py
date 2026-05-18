@@ -31,9 +31,7 @@ def evaluate_rules(
 ) -> tuple[RuleViolation, ...]:
     selected_rules = tuple(default_rules() if rules is None else rules)
     return tuple(
-        violation
-        for rule in selected_rules
-        for violation in rule.evaluate(candidate, context)
+        violation for rule in selected_rules for violation in rule.evaluate(candidate, context)
     )
 
 

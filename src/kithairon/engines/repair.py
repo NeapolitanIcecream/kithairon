@@ -103,9 +103,7 @@ def _select_base_candidates(
 ) -> tuple[CanonCandidate, ...]:
     repairable = tuple(candidate for candidate in strict_pool if _repairable_violations(candidate))
     low_scoring = tuple(
-        candidate
-        for candidate in repairable
-        if candidate.score < config.quality.strict_good_score
+        candidate for candidate in repairable if candidate.score < config.quality.strict_good_score
     )
     candidate_pool = low_scoring or repairable
     return tuple(
@@ -316,8 +314,7 @@ def _nearest_consonant_pitch(current_pitch: int, leader_pitch: int) -> int:
     candidates = tuple(
         pitch
         for pitch in range(current_pitch - 12, current_pitch + 13)
-        if pitch != current_pitch
-        and abs(pitch - leader_pitch) % 12 in CONSONANT_SIMPLE_SEMITONES
+        if pitch != current_pitch and abs(pitch - leader_pitch) % 12 in CONSONANT_SIMPLE_SEMITONES
     )
     if not candidates:
         return current_pitch

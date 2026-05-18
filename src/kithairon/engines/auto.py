@@ -39,9 +39,7 @@ class AutoEngine:
         strict_summary = _strict_summary(strict_pool)
         should_repair = _should_trigger_repair(strict_summary, self.config)
 
-        repair_candidates = (
-            generate_repair_candidates(melody, self.config) if should_repair else ()
-        )
+        repair_candidates = generate_repair_candidates(melody, self.config) if should_repair else ()
         should_solver = _should_trigger_solver(repair_candidates, should_repair, self.config)
         solver_candidates = (
             generate_solver_candidates(melody, self.config)

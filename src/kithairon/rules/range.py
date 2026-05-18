@@ -65,9 +65,7 @@ class RangeRule:
 
 def _classify_registers(voices: tuple[Voice, ...]) -> dict[VoiceName, str]:
     averages = {
-        voice.name: _average_pitch(voice)
-        for voice in voices
-        if _average_pitch(voice) is not None
+        voice.name: _average_pitch(voice) for voice in voices if _average_pitch(voice) is not None
     }
     if not averages:
         return {}
