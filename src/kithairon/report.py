@@ -41,6 +41,12 @@ Edit plan:
 - `{{ edit.event_id }}` {{ edit.operation }}: {{ edit.from_pitch }} -> {{ edit.to_pitch }}
 {% endfor -%}
 {% endif %}
+{% if c.od %}
+Objective details:
+- status: `{{ c.od.status }}`
+- objective: {{ c.od.objective_value }}
+- wall time: {{ c.od.wall_time_seconds }}s
+{% endif %}
 
 {% endfor -%}
 """
@@ -72,6 +78,7 @@ def _report_candidate_row(candidate: Mapping[str, Any]) -> dict[str, Any]:
         "o": f"[MusicXML]({outputs['musicxml']}), [MIDI]({outputs['midi']})",
         "p": _top_penalties(candidate),
         "e": _edit_plan(candidate),
+        "od": _objective_details(candidate),
     }
 
 
@@ -89,6 +96,14 @@ def _edit_plan(candidate: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     if not isinstance(edit_plan, list):
         return []
     return [_mapping(item) for item in cast(list[object], edit_plan)]
+
+
+def _objective_details(candidate: Mapping[str, Any]) -> Mapping[str, Any]:
+    metadata = _mapping(candidate.get("metadata", {}))
+    objective_details = metadata.get("objective_details", {})
+    if not isinstance(objective_details, Mapping):
+        return {}
+    return cast(Mapping[str, Any], objective_details)
 
 
 def _transform_summary(transform: Mapping[str, Any]) -> str:

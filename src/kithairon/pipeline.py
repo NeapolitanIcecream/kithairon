@@ -12,6 +12,7 @@ from typing import Any, cast
 from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import KithaironConfig, format_fraction, write_resolved_config
 from kithairon.engines.repair import generate_repair_candidates
+from kithairon.engines.solver import generate_solver_candidates
 from kithairon.engines.strict import generate_strict_candidates, transform_spec_to_dict
 from kithairon.errors import GenerationError
 from kithairon.export import CandidateExportPaths, write_candidate_exports
@@ -89,6 +90,19 @@ def _generate_candidates(
                 "Repair engine could not improve any strict candidate.",
                 code="repair_no_candidates",
                 details={"engine": engine},
+            )
+        return candidates
+    if engine == "solver":
+        candidates = generate_solver_candidates(melody, config)
+        if not candidates:
+            raise GenerationError(
+                "CP-SAT solver did not find a feasible relaxed canon candidate.",
+                code="solver_no_solution",
+                details={
+                    "engine": engine,
+                    "max_seconds": config.solver.max_seconds,
+                    "max_edited_notes": config.solver.max_edited_notes,
+                },
             )
         return candidates
     raise GenerationError(
