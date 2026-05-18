@@ -12,6 +12,7 @@ from kithairon import __version__
 from kithairon.adapters.music21_parse import parse_melody
 from kithairon.config import build_config_overrides, load_config, write_resolved_config
 from kithairon.errors import KithaironError
+from kithairon.pipeline import GenerationRun, run_generation
 
 console = Console()
 
@@ -49,6 +50,12 @@ OUT_PATH_OPTION: object = _option(
     "-o",
     dir_okay=False,
     help="Write the resolved config to this path instead of stdout.",
+)
+OUT_DIR_OPTION: object = _option(
+    "--out",
+    "-o",
+    file_okay=False,
+    help="Directory where generated artifacts will be written.",
 )
 FORMAT_OPTION: object = _option(
     "--format",
@@ -112,6 +119,63 @@ def validate(
             "key_hint": melody.key_hint,
         }
     )
+
+
+@app.command()
+def generate(
+    input_path: Annotated[Path, INPUT_PATH_ARGUMENT],
+    out: Annotated[Path, OUT_DIR_OPTION],
+    config_path: Annotated[Path | None, CONFIG_PATH_OPTION] = None,
+    chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
+    engine: Annotated[str | None, ENGINE_OPTION] = None,
+    top_k: Annotated[int | None, TOP_K_OPTION] = None,
+) -> None:
+    """Generate strict canon candidates and write export/report artifacts."""
+    payload = _run_generate_command(
+        input_path=input_path,
+        out=out,
+        config_path=config_path,
+        chord_policy=chord_policy,
+        engine=engine,
+        top_k=top_k,
+    )
+    console.print_json(data=payload)
+
+
+def _run_generate_command(
+    *,
+    input_path: Path,
+    out: Path,
+    config_path: Path | None,
+    chord_policy: str | None,
+    engine: str | None,
+    top_k: int | None,
+) -> dict[str, object]:
+    overrides = build_config_overrides(
+        chord_policy=chord_policy,
+        engine=engine,
+        top_k=top_k,
+    )
+    try:
+        config = load_config(config_path, overrides)
+        generation = run_generation(input_path, out, config)
+    except KithaironError as exc:
+        console.print_json(data=exc.to_diagnostic())
+        raise typer.Exit(code=1) from exc
+
+    return _generation_success_payload(generation)
+
+
+def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
+    return {
+        "status": "ok",
+        "engine": generation.results["engine"],
+        "out": str(generation.output_dir),
+        "candidates": len(generation.candidates),
+        "results": str(generation.results_path),
+        "report": str(generation.report_path),
+        "resolved_config": str(generation.resolved_config_path),
+    }
 
 
 @config_app.command("resolve")

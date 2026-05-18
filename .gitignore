@@ -170,6 +170,7 @@ venv.bak/
 
 # Generated audit and generation reports
 /output/
+/tmp/
 
 # mypy
 .mypy_cache/

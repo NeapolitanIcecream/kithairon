@@ -57,3 +57,7 @@ class ParseError(KithaironError):
 
 class TransformError(KithaironError):
     """Raised when a melody transform cannot be applied."""
+
+
+class GenerationError(KithaironError):
+    """Raised when candidate generation or output writing cannot continue."""
