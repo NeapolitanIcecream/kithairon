@@ -17,15 +17,8 @@ from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import run_generation
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
-    resolve_candidate_artifact,
-    resolve_run_artifact,
-    update_candidate_artifacts,
 )
-from kithairon.visualization.export_score import (
-    ExternalScoreRenderError,
-    RenderFormat,
-    render_with_musescore,
-)
+from kithairon.visualization.export_score import RenderFormat
 
 console = Console()
 ALLOWED_UPLOAD_SUFFIXES = {".mid", ".midi", ".musicxml", ".xml", ".mxl"}
@@ -216,6 +209,8 @@ async def _unexpected_error_handler(_request: object, exc: Exception) -> Any:
 
 
 def _register_routes(app: Any, settings: ApiSettings) -> None:
+    from kithairon.api.routes_artifacts import register_artifact_routes
+
     app.add_api_route("/api/health", _health, methods=["GET"])
     app.add_api_route("/api/runs", _create_run_endpoint(settings), methods=["POST"])
     app.add_api_route("/api/runs/{run_id}", _get_run_endpoint(settings), methods=["GET"])
@@ -224,36 +219,7 @@ def _register_routes(app: Any, settings: ApiSettings) -> None:
         _get_run_visualization_endpoint(settings),
         methods=["GET"],
     )
-    app.add_api_route(
-        "/api/runs/{run_id}/artifact/{kind}",
-        _get_run_artifact_endpoint(settings),
-        methods=["GET"],
-    )
-    app.add_api_route(
-        "/api/runs/{run_id}/candidates/{candidate_id}",
-        _get_candidate_endpoint(settings),
-        methods=["GET"],
-    )
-    app.add_api_route(
-        "/api/runs/{run_id}/candidates/{candidate_id}/musicxml",
-        _get_candidate_musicxml_endpoint(settings),
-        methods=["GET"],
-    )
-    app.add_api_route(
-        "/api/runs/{run_id}/candidates/{candidate_id}/midi",
-        _get_candidate_midi_endpoint(settings),
-        methods=["GET"],
-    )
-    app.add_api_route(
-        "/api/runs/{run_id}/candidates/{candidate_id}/artifact/{kind}",
-        _get_candidate_artifact_endpoint(settings),
-        methods=["GET"],
-    )
-    app.add_api_route(
-        "/api/runs/{run_id}/candidates/{candidate_id}/render",
-        _render_candidate_endpoint(settings),
-        methods=["POST"],
-    )
+    register_artifact_routes(app, settings)
 
 
 def _health() -> dict[str, str]:
@@ -285,52 +251,6 @@ def _get_run_visualization_endpoint(settings: ApiSettings) -> Any:
         return _run_visualization(settings, run_id)
 
     return get_run_visualization
-
-
-def _get_run_artifact_endpoint(settings: ApiSettings) -> Any:
-    def get_run_artifact(run_id: str, kind: str) -> Any:
-        return _run_artifact_response(settings, run_id, kind)
-
-    return get_run_artifact
-
-
-def _get_candidate_endpoint(settings: ApiSettings) -> Any:
-    def get_candidate(run_id: str, candidate_id: str) -> dict[str, object]:
-        return _candidate_payload(settings, run_id, candidate_id)
-
-    return get_candidate
-
-
-def _get_candidate_musicxml_endpoint(settings: ApiSettings) -> Any:
-    def get_candidate_musicxml(run_id: str, candidate_id: str) -> Any:
-        return _candidate_artifact_response(settings, run_id, candidate_id, "musicxml")
-
-    return get_candidate_musicxml
-
-
-def _get_candidate_midi_endpoint(settings: ApiSettings) -> Any:
-    def get_candidate_midi(run_id: str, candidate_id: str) -> Any:
-        return _candidate_artifact_response(settings, run_id, candidate_id, "midi")
-
-    return get_candidate_midi
-
-
-def _get_candidate_artifact_endpoint(settings: ApiSettings) -> Any:
-    def get_candidate_artifact(run_id: str, candidate_id: str, kind: str) -> Any:
-        return _candidate_artifact_response(settings, run_id, candidate_id, kind)
-
-    return get_candidate_artifact
-
-
-def _render_candidate_endpoint(settings: ApiSettings) -> Any:
-    def render_candidate(
-        run_id: str,
-        candidate_id: str,
-        request: RenderRequest,
-    ) -> dict[str, object]:
-        return _render_candidate_response(settings, run_id, candidate_id, request)
-
-    return render_candidate
 
 
 def _mount_frontend(app: Any, settings: ApiSettings) -> None:
@@ -393,7 +313,7 @@ async def _create_run_from_request(request: Any, settings: ApiSettings) -> dict[
         part_index=upload.part_index,
     )
     generation = run_generation(input_path, output_dir, request_config, overwrite_output=True)
-    return _read_json_object(generation.visualization_path)
+    return read_json_object(generation.visualization_path)
 
 
 async def _read_upload_request(request: Any, settings: ApiSettings) -> RunUploadRequest:
@@ -535,7 +455,7 @@ def _config_payload(config_json: str | None) -> dict[str, object]:
     return {str(key): value for key, value in mapped.items()}
 
 
-def _read_json_object(path: Path) -> dict[str, object]:
+def read_json_object(path: Path) -> dict[str, object]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ApiError(
@@ -546,115 +466,15 @@ def _read_json_object(path: Path) -> dict[str, object]:
     return {str(key): value for key, value in mapped.items()}
 
 
-def _run_artifact_response(settings: ApiSettings, run_id: str, kind: str) -> Any:
-    index_path = _artifact_index_path(settings, run_id)
-    return _download_response(resolve_run_artifact(index_path, kind))
-
-
-def _candidate_payload(settings: ApiSettings, run_id: str, candidate_id: str) -> dict[str, object]:
-    candidates = _visualization_candidates(_run_visualization(settings, run_id))
-    for candidate in candidates:
-        if candidate.get("candidate_id") == candidate_id:
-            return {str(key): value for key, value in candidate.items()}
-    raise ApiError(
-        "Candidate was not found in this run.",
-        code="candidate_not_found",
-        status_code=404,
-        details={"run_id": run_id, "candidate_id": candidate_id},
-    )
-
-
-def _visualization_candidates(visualization: dict[str, object]) -> list[dict[object, object]]:
-    candidates = visualization.get("candidates")
-    if not isinstance(candidates, list):
-        raise ApiError(
-            "Visualization payload does not contain candidates.",
-            code="visualization_candidates_invalid",
-            status_code=500,
-        )
-    mapped_candidates: list[dict[object, object]] = []
-    for candidate in cast(list[object], candidates):
-        if isinstance(candidate, dict):
-            mapped_candidates.append(cast(dict[object, object], candidate))
-    return mapped_candidates
-
-
-def _candidate_artifact_response(
-    settings: ApiSettings,
-    run_id: str,
-    candidate_id: str,
-    kind: str,
-) -> Any:
-    index_path = _artifact_index_path(settings, run_id)
-    artifact_path = resolve_candidate_artifact(index_path, candidate_id, kind)
-    return _download_response(artifact_path)
-
-
-def _render_candidate_response(
-    settings: ApiSettings,
-    run_id: str,
-    candidate_id: str,
-    request: RenderRequest,
-) -> dict[str, object]:
-    if settings.musescore_bin is None:
-        raise ApiError(
-            "MuseScore CLI is not configured. Set MUSESCORE_BIN or --musescore-bin.",
-            code="external_renderer_unavailable",
-            status_code=503,
-        )
-    index_path = _artifact_index_path(settings, run_id)
-    rendered = _render_candidate_formats(settings, run_id, candidate_id, request.formats)
-    update_candidate_artifacts(index_path, candidate_id, rendered)
-    return {"candidate_id": candidate_id, "artifacts": rendered}
-
-
-def _render_candidate_formats(
-    settings: ApiSettings,
-    run_id: str,
-    candidate_id: str,
-    formats: list[RenderFormat],
-) -> dict[str, str]:
-    index_path = _artifact_index_path(settings, run_id)
-    musicxml_path = resolve_candidate_artifact(index_path, candidate_id, "musicxml")
-    return {
-        fmt: _render_candidate_format(settings, run_id, candidate_id, fmt, musicxml_path)
-        for fmt in formats
-    }
-
-
-def _render_candidate_format(
-    settings: ApiSettings,
-    run_id: str,
-    candidate_id: str,
-    fmt: RenderFormat,
-    musicxml_path: Path,
-) -> str:
-    output_path = _render_output_path(settings, run_id, candidate_id, fmt)
-    try:
-        render_with_musescore(
-            musicxml_path,
-            output_path,
-            fmt,
-            cast(Path, settings.musescore_bin),
-        )
-    except ExternalScoreRenderError as exc:
-        raise ApiError(
-            str(exc),
-            code="external_renderer_failed",
-            status_code=502,
-        ) from exc
-    return str(output_path.relative_to(_run_dir(settings, run_id)))
-
-
 def _run_visualization(settings: ApiSettings, run_id: str) -> dict[str, object]:
-    return _read_json_object(_run_dir(settings, run_id) / "visualization.json")
+    return read_json_object(run_dir(settings, run_id) / "visualization.json")
 
 
-def _artifact_index_path(settings: ApiSettings, run_id: str) -> Path:
-    return _run_dir(settings, run_id) / "artifact_index.json"
+def artifact_index_path(settings: ApiSettings, run_id: str) -> Path:
+    return run_dir(settings, run_id) / "artifact_index.json"
 
 
-def _run_dir(settings: ApiSettings, run_id: str) -> Path:
+def run_dir(settings: ApiSettings, run_id: str) -> Path:
     if Path(run_id).name != run_id or run_id in {"", ".", ".."}:
         raise ApiError(
             "Run id is not valid.",
@@ -665,7 +485,7 @@ def _run_dir(settings: ApiSettings, run_id: str) -> Path:
     return settings.output_root / run_id
 
 
-def _download_response(path: Path) -> Any:
+def download_response(path: Path) -> Any:
     from fastapi.responses import FileResponse
 
     if not path.exists() or not path.is_file():
@@ -676,20 +496,3 @@ def _download_response(path: Path) -> Any:
             details={"path": str(path)},
         )
     return FileResponse(path, filename=path.name)
-
-
-def _render_output_path(
-    settings: ApiSettings,
-    run_id: str,
-    candidate_id: str,
-    fmt: RenderFormat,
-) -> Path:
-    safe_candidate_id = Path(candidate_id).name
-    if safe_candidate_id != candidate_id or candidate_id in {"", ".", ".."}:
-        raise ApiError(
-            "Candidate id is not valid.",
-            code="invalid_candidate_id",
-            status_code=400,
-            details={"candidate_id": candidate_id},
-        )
-    return _run_dir(settings, run_id) / "renders" / candidate_id / f"{candidate_id}.{fmt}"

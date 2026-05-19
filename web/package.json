@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "e2e": "playwright test",
     "generate:api": "openapi-typescript src/api/openapi.json -o src/api/openapi.d.ts",
     "lint": "eslint .",
     "test": "vitest run",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.12.3",
