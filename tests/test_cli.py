@@ -27,6 +27,24 @@ def test_help_command_lists_primary_commands() -> None:
     assert "config" in result.stdout
 
 
+def test_generate_help_lists_score_profile_option() -> None:
+    result = CliRunner().invoke(app, ["generate", "--help"], terminal_width=160)
+
+    assert result.exit_code == 0
+    assert "--score-profile" in result.stdout
+
+
+def test_config_resolve_help_lists_score_profile_option() -> None:
+    result = CliRunner().invoke(
+        app,
+        ["config", "resolve", "--help"],
+        terminal_width=160,
+    )
+
+    assert result.exit_code == 0
+    assert "--score-profile" in result.stdout
+
+
 def test_config_resolve_json_smoke() -> None:
     result = CliRunner().invoke(
         app,

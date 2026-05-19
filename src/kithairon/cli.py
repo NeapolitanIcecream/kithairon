@@ -46,6 +46,7 @@ class GenerateCommandOptions:
 
 @dataclass(frozen=True)
 class ExtraCommandOptions:
+    chord_policy: str | None = None
     overwrite: bool = False
     score_profile: str | None = None
 
@@ -170,9 +171,9 @@ def generate(
     input_path: Annotated[Path, INPUT_PATH_ARGUMENT],
     out: Annotated[Path, OUT_DIR_OPTION],
     config_path: Annotated[Path | None, CONFIG_PATH_OPTION] = None,
-    chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
+    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Generate strict canon candidates and write export/report artifacts."""
     extra_options = _generate_extra_options()
@@ -181,10 +182,10 @@ def generate(
         out=out,
         options=GenerateCommandOptions(
             config_path=config_path,
-            chord_policy=chord_policy,
+            chord_policy=extra_options.chord_policy,
             engine=engine,
             top_k=top_k,
-            score_profile=extra_options.score_profile,
+            score_profile=score_profile,
             overwrite=extra_options.overwrite,
         ),
     )
@@ -234,6 +235,7 @@ def _resolve_extra_options() -> ExtraCommandOptions:
 
 def _parse_extra_options(extra_args: list[str], *, allow_overwrite: bool) -> ExtraCommandOptions:
     overwrite = overwrite_output
+    chord_policy: str | None = None
     score_profile: str | None = None
     index = 0
     while index < len(extra_args):
@@ -252,9 +254,22 @@ def _parse_extra_options(extra_args: list[str], *, allow_overwrite: bool) -> Ext
         elif arg.startswith("--score-profile="):
             score_profile = arg.split("=", maxsplit=1)[1]
             index += 1
+        elif arg == "--chord-policy":
+            try:
+                chord_policy = extra_args[index + 1]
+            except IndexError as exc:
+                raise UsageError("--chord-policy requires a value") from exc
+            index += 2
+        elif arg.startswith("--chord-policy="):
+            chord_policy = arg.split("=", maxsplit=1)[1]
+            index += 1
         else:
             raise UsageError(f"Unsupported option or argument: {arg}")
-    return ExtraCommandOptions(overwrite=overwrite, score_profile=score_profile)
+    return ExtraCommandOptions(
+        chord_policy=chord_policy,
+        overwrite=overwrite,
+        score_profile=score_profile,
+    )
 
 
 def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
@@ -278,18 +293,18 @@ def resolve_config(
     config_path: Annotated[Path | None, CONFIG_PATH_OPTION] = None,
     out: Annotated[Path | None, OUT_PATH_OPTION] = None,
     output_format: Annotated[Literal["toml", "json"], FORMAT_OPTION] = "toml",
-    chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
+    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Load config defaults, apply overrides, and print or write the resolved config."""
     extra_options = _resolve_extra_options()
     overrides = build_config_overrides(
         ConfigOverrideOptions(
-            chord_policy=chord_policy,
+            chord_policy=extra_options.chord_policy,
             engine=engine,
             top_k=top_k,
-            score_profile=extra_options.score_profile,
+            score_profile=score_profile,
         )
     )
     try:
