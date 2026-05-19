@@ -6,23 +6,39 @@ Use it from the `canonize` CLI with MIDI or MusicXML input. Each generation run 
 
 ## 30-Second Demo
 
-Run Kithairon on the bundled MusicXML fragment:
+Run Kithairon on a longer Bach-derived MusicXML fragment:
 
 ```bash
-uv run canonize generate examples/melodies/scale_c_major.musicxml \
+uv run canonize generate examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml \
   --out tmp/demo \
-  --engine strict \
-  --top-k 1
+  --engine repair \
+  --top-k 12
 ```
 
-The input is a short monophonic C-major melody. The generated output is a two-voice canon candidate with:
+The input is a two-measure monophonic incipit derived from the public-domain BWV 846 entry shipped in the music21 corpus. The generated output includes playable canon candidates with:
 
 - `tmp/demo/candidates/*.musicxml`: a score you can open in a notation editor.
 - `tmp/demo/candidates/*.mid`: a playable MIDI file.
 - `tmp/demo/report.md`: the score summary and rule penalties.
 - `tmp/demo/visualization.json`: data for the web visualization.
 
-To inspect the same run in the browser, start the visualization API and frontend as described in [Visualization](docs/visualization.md), then upload `examples/melodies/scale_c_major.musicxml`.
+The preview below uses the rank 1 repair candidate from this run: repaired inversion, delay 4, score 86.0. In an external listening pass over the main demo candidates, this was the most pleasant clip even though a stricter transposition candidate scored higher under Kithairon's rule penalties.
+
+![Input score: Bach BWV 846 upper-voice incipit](docs/assets/demo/input-score.png)
+
+![Generated relaxed canon score: repaired inversion](docs/assets/demo/output-score-repair-inversion.png)
+
+Listen to the selected candidate: [MP3](docs/assets/demo/output-repair-inversion-delay4.mp3) or [MIDI](docs/assets/demo/output-repair-inversion-delay4.mid).
+
+To inspect the same run in the browser, start the visualization API and frontend as described in [Visualization](docs/visualization.md), then upload `examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml`.
+
+![Kithairon web UI showing the selected repair candidate](docs/assets/demo/web-ui-repair-inversion.png)
+
+The score breakdown view shows the tradeoff: the selected clip sounds better than the best strict fallback, but it still pays weak-beat dissonance penalties under the current scoring model.
+
+![Score breakdown with weak-beat dissonance penalties](docs/assets/demo/score-breakdown-repair.png)
+
+Additional preview picks are available in [docs/assets/demo](docs/assets/demo): the best strict fallback, `output-strict-transposition-delay4.*`, and a second strict alternative with a wider delay.
 
 ## Requirements
 
