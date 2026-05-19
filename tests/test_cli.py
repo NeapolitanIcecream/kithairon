@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from typer.testing import CliRunner
 
+from kithairon import __version__
 from kithairon.cli import app
 
 
@@ -14,7 +15,7 @@ def test_version_command_prints_package_version() -> None:
     result = runner.invoke(app, ["version"])
 
     assert result.exit_code == 0
-    assert "0.1.0" in result.stdout
+    assert __version__ in result.stdout
 
 
 def test_help_command_lists_primary_commands() -> None:

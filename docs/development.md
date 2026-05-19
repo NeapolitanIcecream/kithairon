@@ -39,6 +39,7 @@ uv run pyright
 uv run coverage run -m pytest
 uv run coverage report
 uv run pytest benchmarks/test_performance_budgets.py -q
+bash scripts/check-package.sh
 bash scripts/build-docs.sh
 ```
 

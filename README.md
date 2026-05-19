@@ -55,6 +55,12 @@ Install the default package and development dependencies:
 uv sync
 ```
 
+After the package-index release is published, install the CLI from PyPI with:
+
+```bash
+uv tool install kithairon-canon
+```
+
 Install OR-Tools when you want the CP-SAT solver engine:
 
 ```bash
@@ -263,6 +269,6 @@ bash scripts/build-docs.sh
 
 Deploy the documentation with Cloudflare Pages Git integration using `pip install uv && uv run --extra docs mkdocs build --strict` as the build command and `site` as the build output directory. See [Deployment](docs/deployment.md) for the full Pages settings.
 
-See [Package Distribution](docs/package-distribution.md) before publishing to a Python package index. The GitHub repository and release names can stay `kithairon`, but the PyPI distribution name is already occupied by an unrelated project.
+See [Package Distribution](docs/package-distribution.md) before publishing to a Python package index. PyPI releases use the `kithairon-canon` distribution name.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request checks and [CHANGELOG.md](CHANGELOG.md) for release notes.

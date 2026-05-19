@@ -659,8 +659,8 @@ wheels = [
 ]
 
 [[package]]
-name = "kithairon"
-version = "0.1.0"
+name = "kithairon-canon"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },

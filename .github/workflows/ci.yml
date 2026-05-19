@@ -24,6 +24,7 @@ jobs:
       - run: uv run coverage run -m pytest
       - run: uv run coverage report
       - run: uv run pytest benchmarks/test_performance_budgets.py -q
+      - run: bash scripts/check-package.sh
 
   frontend:
     runs-on: ubuntu-latest

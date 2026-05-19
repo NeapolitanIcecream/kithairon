@@ -1,0 +1,41 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Package index target
+        required: true
+        type: choice
+        options:
+          - testpypi
+          - pypi
+        default: testpypi
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.repository }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v7
+      - run: bash scripts/check-package.sh
+      - name: Publish to TestPyPI
+        if: inputs.repository == 'testpypi'
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        run: >-
+          uv publish
+          --publish-url https://test.pypi.org/legacy/
+          --check-url https://test.pypi.org/simple/kithairon-canon/
+      - name: Publish to PyPI
+        if: inputs.repository == 'pypi'
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish --check-url https://pypi.org/simple/kithairon-canon/
