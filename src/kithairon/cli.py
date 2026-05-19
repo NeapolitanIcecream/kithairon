@@ -35,6 +35,7 @@ class GenerateCommandOptions:
     chord_policy: str | None
     engine: str | None
     top_k: int | None
+    score_profile: str | None
     overwrite: bool
 
 
@@ -86,6 +87,10 @@ ENGINE_OPTION: object = _option(
     help="Override generation engine: auto, strict, repair, or solver.",
 )
 TOP_K_OPTION: object = _option("--top-k", min=1)
+SCORE_PROFILE_OPTION: object = _option(
+    "--score-profile",
+    help="Override scoring profile: permissive, pop-lite, or renaissance-lite.",
+)
 DEBUG_OPTION: object = _option(
     "--debug",
     help="Show Python tracebacks instead of compact JSON diagnostics.",
@@ -155,6 +160,7 @@ def generate(
     chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
+    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Generate strict canon candidates and write export/report artifacts."""
     payload = _run_generate_command(
@@ -165,6 +171,7 @@ def generate(
             chord_policy=chord_policy,
             engine=engine,
             top_k=top_k,
+            score_profile=score_profile,
             overwrite=_generate_overwrite_flag(),
         ),
     )
@@ -181,6 +188,7 @@ def _run_generate_command(
         chord_policy=options.chord_policy,
         engine=options.engine,
         top_k=options.top_k,
+        score_profile=options.score_profile,
     )
     try:
         config = load_config(options.config_path, overrides)
@@ -227,12 +235,14 @@ def resolve_config(
     chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
+    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Load config defaults, apply overrides, and print or write the resolved config."""
     overrides = build_config_overrides(
         chord_policy=chord_policy,
         engine=engine,
         top_k=top_k,
+        score_profile=score_profile,
     )
     try:
         config = load_config(config_path, overrides)

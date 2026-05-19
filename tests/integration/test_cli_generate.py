@@ -78,6 +78,72 @@ def test_generate_command_writes_strict_outputs(tmp_path: Path) -> None:
     assert first_candidate["id"] in indexed_candidates
 
 
+def test_generate_command_applies_score_profile_to_candidate_breakdowns(tmp_path: Path) -> None:
+    runner = CliRunner()
+    config_path = tmp_path / "single_strict_candidate.toml"
+    config_path.write_text(
+        """
+[generation]
+engine = "strict"
+top_k = 1
+delays = ["1"]
+intervals = [0]
+transforms = ["identity"]
+rhythm_scales = ["1"]
+""",
+        encoding="utf-8",
+    )
+    permissive_results = _run_generate_with_score_profile(
+        runner,
+        tmp_path / "permissive",
+        "permissive",
+        config_path,
+    )
+    renaissance_results = _run_generate_with_score_profile(
+        runner,
+        tmp_path / "renaissance",
+        "renaissance-lite",
+        config_path,
+    )
+
+    permissive_candidate = cast(dict[str, Any], permissive_results["candidates"][0])
+    renaissance_candidate = cast(dict[str, Any], renaissance_results["candidates"][0])
+    permissive_metadata = cast(dict[str, Any], permissive_candidate["metadata"])
+    renaissance_metadata = cast(dict[str, Any], renaissance_candidate["metadata"])
+    permissive_breakdown = cast(dict[str, Any], permissive_candidate["score_breakdown"])
+    renaissance_breakdown = cast(dict[str, Any], renaissance_candidate["score_breakdown"])
+
+    assert permissive_results["resolved_config"]["scoring"]["profile"] == "permissive"
+    assert renaissance_results["resolved_config"]["scoring"]["profile"] == "renaissance-lite"
+    assert permissive_metadata["score_profile"] == "permissive"
+    assert renaissance_metadata["score_profile"] == "renaissance-lite"
+    assert permissive_breakdown["total_penalty"] < renaissance_breakdown["total_penalty"]
+    assert permissive_candidate["score"] > renaissance_candidate["score"]
+
+
+def _run_generate_with_score_profile(
+    runner: CliRunner,
+    out_dir: Path,
+    score_profile: str,
+    config_path: Path,
+) -> dict[str, Any]:
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "examples/melodies/bad_for_canon.musicxml",
+            "--out",
+            str(out_dir),
+            "--config",
+            str(config_path),
+            "--score-profile",
+            score_profile,
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    return cast(dict[str, Any], json.loads((out_dir / "results.json").read_text()))
+
+
 def test_generate_command_uses_suffixed_output_dir_when_existing_dir_is_nonempty(
     tmp_path: Path,
 ) -> None:

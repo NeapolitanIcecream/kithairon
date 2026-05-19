@@ -258,7 +258,11 @@ def _score_solver_solution(
         violations=(),
         metadata=_solver_candidate_metadata(solution),
     )
-    scored = score_candidate(candidate, quality=config.quality)
+    scored = score_candidate(
+        candidate,
+        profile_name=config.scoring.profile,
+        quality=config.quality,
+    )
     return replace(
         scored,
         metadata={

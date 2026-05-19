@@ -59,6 +59,7 @@ describe('uploadRun', () => {
     const summary = await uploadRun({
       file,
       engine: 'strict',
+      scoreProfile: 'renaissance-lite',
       topK: 4,
       chordPolicy: 'top_note',
       partPolicy: 'explicit_index',
@@ -74,6 +75,7 @@ describe('uploadRun', () => {
     const form = init.body as FormData
     expect(form.get('file')).toBe(file)
     expect(form.get('engine')).toBe('strict')
+    expect(form.get('score_profile')).toBe('renaissance-lite')
     expect(form.get('top_k')).toBe('4')
     expect(form.get('chord_policy')).toBe('top_note')
     expect(form.get('part_policy')).toBe('explicit_index')

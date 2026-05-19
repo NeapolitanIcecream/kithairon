@@ -56,6 +56,24 @@ The default score profile is `pop-lite`. Profiles do not change the rule set. Th
 
 Use a stricter profile when you want the top candidates to avoid traditional counterpoint problems more aggressively. Use a looser profile when you want more variety or plan to edit the result manually.
 
+Select a profile in a config file:
+
+```toml
+[scoring]
+profile = "renaissance-lite"
+```
+
+Or override it for one CLI run:
+
+```bash
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/strict \
+  --engine strict \
+  --score-profile permissive
+```
+
+The web upload panel exposes the same control as `Score profile`.
+
 ## Strict And Relaxed Candidates
 
 A strict canon keeps the follower voice as an exact transform of the input melody. Its `results.json` entry has:

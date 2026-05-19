@@ -15,6 +15,7 @@ import {
   type ChordPolicy,
   type GenerationEngine,
   type PartPolicy,
+  type ScoreProfile,
 } from '../api/runs'
 import type { RunSummary } from '../api/schemas'
 
@@ -27,6 +28,12 @@ const engineOptions: Array<{ value: GenerationEngine; label: string }> = [
   { value: 'strict', label: 'Strict' },
   { value: 'repair', label: 'Repair' },
   { value: 'solver', label: 'Solver' },
+]
+
+const scoreProfileOptions: Array<{ value: ScoreProfile; label: string }> = [
+  { value: 'pop-lite', label: 'Pop lite' },
+  { value: 'permissive', label: 'Permissive' },
+  { value: 'renaissance-lite', label: 'Renaissance lite' },
 ]
 
 const chordPolicyOptions: Array<{ value: ChordPolicy; label: string }> = [
@@ -44,6 +51,7 @@ const partPolicyOptions: Array<{ value: PartPolicy; label: string }> = [
 export function UploadPanel({ onRunLoaded }: UploadPanelProps) {
   const [file, setFile] = useState<File | null>(null)
   const [engine, setEngine] = useState<GenerationEngine>('auto')
+  const [scoreProfile, setScoreProfile] = useState<ScoreProfile>('pop-lite')
   const [topK, setTopK] = useState(8)
   const [chordPolicy, setChordPolicy] = useState<ChordPolicy>('error')
   const [partPolicy, setPartPolicy] = useState<PartPolicy>('first')
@@ -57,6 +65,7 @@ export function UploadPanel({ onRunLoaded }: UploadPanelProps) {
       return uploadRun({
         file,
         engine,
+        scoreProfile,
         topK,
         chordPolicy,
         partPolicy,
@@ -95,6 +104,13 @@ export function UploadPanel({ onRunLoaded }: UploadPanelProps) {
           onChange={(value) => setTopK(toPositiveInteger(value, 8))}
         />
       </Group>
+      <Select
+        label="Score profile"
+        data={scoreProfileOptions}
+        value={scoreProfile}
+        allowDeselect={false}
+        onChange={(value) => setScoreProfile((value ?? 'pop-lite') as ScoreProfile)}
+      />
       <Group grow align="flex-end">
         <Select
           label="Chord policy"

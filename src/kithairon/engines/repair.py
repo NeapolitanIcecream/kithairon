@@ -196,7 +196,11 @@ def _score_repair_candidate(
             "edit_plan": [action.to_dict() for action in edit_plan],
         },
     )
-    scored = score_candidate(candidate, quality=config.quality)
+    scored = score_candidate(
+        candidate,
+        profile_name=config.scoring.profile,
+        quality=config.quality,
+    )
     edit_penalty = EDIT_PENALTY * len(edit_plan)
     adjusted_score = max(0.0, round(scored.score - edit_penalty, 2))
     return replace(

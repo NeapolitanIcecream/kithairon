@@ -22,6 +22,7 @@ def test_default_config_matches_initial_generation_plan() -> None:
     assert config.generation.top_k == 8
     assert config.generation.delays == (Fraction(1), Fraction(2), Fraction(4), Fraction(8))
     assert config.generation.rhythm_scales == (Fraction(1), Fraction(2), Fraction(1, 2))
+    assert config.scoring.profile == "pop-lite"
 
 
 def test_fraction_fields_serialize_stably_to_json() -> None:
@@ -67,6 +68,9 @@ chord_policy = "error"
 [generation]
 top_k = 2
 engine = "auto"
+
+[scoring]
+profile = "permissive"
 """,
         encoding="utf-8",
     )
@@ -86,6 +90,8 @@ engine = "auto"
             "strict",
             "--top-k",
             "9",
+            "--score-profile",
+            "renaissance-lite",
         ],
     )
 
@@ -94,6 +100,7 @@ engine = "auto"
     assert 'chord_policy = "bottom_note"' in resolved
     assert 'engine = "strict"' in resolved
     assert "top_k = 9" in resolved
+    assert 'profile = "renaissance-lite"' in resolved
 
 
 def test_invalid_config_error_has_machine_readable_diagnostic(tmp_path: Path) -> None:
@@ -113,3 +120,23 @@ chord_policy = "middle_note"
     details = cast(dict[str, Any], diagnostic["details"])
     assert diagnostic["code"] == "config_invalid"
     assert details["source"] == str(config_path)
+
+
+def test_invalid_scoring_profile_has_machine_readable_diagnostic(tmp_path: Path) -> None:
+    config_path = tmp_path / "bad-score.toml"
+    config_path.write_text(
+        """
+[scoring]
+profile = "galactic"
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigError) as raised:
+        load_config(config_path)
+
+    diagnostic = raised.value.to_diagnostic()
+    details = cast(dict[str, Any], diagnostic["details"])
+    assert diagnostic["code"] == "config_invalid"
+    assert "scoring" in str(details["errors"])
+    assert "galactic" in str(details["errors"])

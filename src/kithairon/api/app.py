@@ -82,6 +82,7 @@ class RunUploadRequest:
     config_json: str | None
     top_k: int | None
     engine: str | None
+    score_profile: str | None
     chord_policy: str | None
     part_policy: str | None
     part_index: int | None
@@ -308,6 +309,7 @@ async def _create_run_from_request(request: Any, settings: ApiSettings) -> dict[
         config_json=upload.config_json,
         top_k=upload.top_k,
         engine=upload.engine,
+        score_profile=upload.score_profile,
         chord_policy=upload.chord_policy,
         part_policy=upload.part_policy,
         part_index=upload.part_index,
@@ -333,6 +335,7 @@ async def _read_upload_request(request: Any, settings: ApiSettings) -> RunUpload
         config_json=_form_text(form, "config"),
         top_k=_form_int(form, "top_k"),
         engine=_form_text(form, "engine"),
+        score_profile=_form_text(form, "score_profile"),
         chord_policy=_form_text(form, "chord_policy"),
         part_policy=_form_text(form, "part_policy"),
         part_index=_form_int(form, "part_index"),
@@ -420,6 +423,7 @@ def _request_config(
     config_json: str | None,
     top_k: int | None,
     engine: str | None,
+    score_profile: str | None,
     chord_policy: str | None,
     part_policy: str | None,
     part_index: int | None,
@@ -431,6 +435,7 @@ def _request_config(
         part_index=part_index,
         engine=engine,
         top_k=top_k,
+        score_profile=score_profile,
     )
     return load_config(None, deep_merge(config_data, overrides))
 

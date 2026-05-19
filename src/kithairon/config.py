@@ -153,6 +153,20 @@ class QualityConfig(ConfigModel):
     auto_solver_threshold: int = Field(default=68, ge=0, le=100)
 
 
+class ScoringConfig(ConfigModel):
+    profile: str = "pop-lite"
+
+    @field_validator("profile")
+    @classmethod
+    def validate_profile(cls, value: str) -> str:
+        from kithairon.scoring.weights import STYLE_PROFILES
+
+        if value in STYLE_PROFILES:
+            return value
+        known_profiles = ", ".join(sorted(STYLE_PROFILES))
+        raise ValueError(f"unknown scoring profile {value!r}; expected {known_profiles}")
+
+
 class RepairConfig(ConfigModel):
     beam_width: int = Field(default=24, ge=1)
     max_steps: int = Field(default=32, ge=0)
@@ -174,6 +188,7 @@ class KithaironConfig(ConfigModel):
     input: InputConfig = Field(default_factory=InputConfig)
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
     quality: QualityConfig = Field(default_factory=QualityConfig)
+    scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     repair: RepairConfig = Field(default_factory=RepairConfig)
     solver: SolverConfig = Field(default_factory=SolverConfig)
 
@@ -250,11 +265,13 @@ def build_config_overrides(
     part_index: int | None = None,
     engine: str | None = None,
     top_k: int | None = None,
+    score_profile: str | None = None,
     solver_enabled: bool | None = None,
 ) -> dict[str, object]:
     overrides: dict[str, object] = {}
     input_overrides: dict[str, object] = {}
     generation_overrides: dict[str, object] = {}
+    scoring_overrides: dict[str, object] = {}
     solver_overrides: dict[str, object] = {}
 
     if chord_policy is not None:
@@ -267,6 +284,8 @@ def build_config_overrides(
         generation_overrides["engine"] = normalize_cli_token(engine)
     if top_k is not None:
         generation_overrides["top_k"] = top_k
+    if score_profile is not None:
+        scoring_overrides["profile"] = score_profile
     if solver_enabled is not None:
         solver_overrides["enabled"] = solver_enabled
 
@@ -274,6 +293,8 @@ def build_config_overrides(
         overrides["input"] = input_overrides
     if generation_overrides:
         overrides["generation"] = generation_overrides
+    if scoring_overrides:
+        overrides["scoring"] = scoring_overrides
     if solver_overrides:
         overrides["solver"] = solver_overrides
     return overrides

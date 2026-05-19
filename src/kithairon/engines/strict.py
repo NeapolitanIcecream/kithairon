@@ -26,6 +26,7 @@ class StrictEngine:
         return tuple(
             score_candidate(
                 _candidate_from_transform(melody, spec, index),
+                profile_name=self.config.scoring.profile,
                 quality=self.config.quality,
             )
             for index, spec in enumerate(

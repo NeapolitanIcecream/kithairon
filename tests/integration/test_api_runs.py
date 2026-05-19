@@ -36,6 +36,27 @@ def test_run_upload_generates_visualization_summary(tmp_path: Path) -> None:
     assert (tmp_path / run_id / "artifact_index.json").exists()
 
 
+def test_run_upload_applies_score_profile_override(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/bad_for_canon.musicxml").open("rb") as handle:
+        response = client.post(
+            "/api/runs",
+            files={"file": ("bad_for_canon.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1", "score_profile": "permissive"},
+        )
+
+    assert response.status_code == 200, response.text
+    payload = cast(dict[str, Any], response.json())
+    config_summary = cast(dict[str, Any], payload["config_summary"])
+    scoring = cast(dict[str, Any], config_summary["scoring"])
+    candidates = cast(list[dict[str, Any]], payload["candidates"])
+    metadata = cast(dict[str, Any], candidates[0]["metadata"])
+
+    assert scoring["profile"] == "permissive"
+    assert metadata["score_profile"] == "permissive"
+
+
 def test_run_upload_rejects_unsupported_suffix(tmp_path: Path) -> None:
     client = TestClient(create_app(output_root=tmp_path))
 

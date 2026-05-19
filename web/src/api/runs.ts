@@ -2,12 +2,14 @@ import { apiFetch, type ApiClientOptions } from './client'
 import { RunSummarySchema, type RunSummary } from './schemas'
 
 export type GenerationEngine = 'auto' | 'strict' | 'repair' | 'solver'
+export type ScoreProfile = 'permissive' | 'pop-lite' | 'renaissance-lite'
 export type ChordPolicy = 'error' | 'top_note' | 'bottom_note'
 export type PartPolicy = 'first' | 'highest_average_pitch' | 'explicit_index'
 
 export type RunUploadOptions = {
   file: File
   engine?: GenerationEngine
+  scoreProfile?: ScoreProfile
   topK?: number
   chordPolicy?: ChordPolicy
   partPolicy?: PartPolicy
@@ -22,6 +24,7 @@ export async function uploadRun(
   const form = new FormData()
   form.append('file', options.file)
   appendOptional(form, 'engine', options.engine)
+  appendOptional(form, 'score_profile', options.scoreProfile)
   appendOptional(form, 'top_k', options.topK)
   appendOptional(form, 'chord_policy', options.chordPolicy)
   appendOptional(form, 'part_policy', options.partPolicy)
