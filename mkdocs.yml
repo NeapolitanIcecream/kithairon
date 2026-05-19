@@ -5,5 +5,7 @@ theme:
 nav:
   - Home: index.md
   - Scoring And Rules: scoring-and-rules.md
+  - Architecture: architecture.md
+  - FAQ: faq.md
   - Development: development.md
   - Visualization: visualization.md

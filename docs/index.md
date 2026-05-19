@@ -35,4 +35,6 @@ Inputs are monophonic by default. Chord input fails unless you set `--chord-poli
 
 See [Scoring And Rules](scoring-and-rules.md) for the rule weights, score profiles, and strict-versus-relaxed canon semantics.
 
+See [Architecture](architecture.md) for the generation pipeline and [FAQ](faq.md) for common setup and output questions.
+
 See the repository README for command examples and output details.
