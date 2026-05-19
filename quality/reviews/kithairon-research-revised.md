@@ -1,149 +1,254 @@
-# Revised Kithairon External Review
+# Kithairon External Review, Current Repository State
 
 Date: 2026-05-19
 
-This document revises an external LLM blind-review memo against the current state of the repository. The review was recalibrated using the README, `docs/`, core Python source, API routes, tests, GitHub Actions configuration, repository metadata, and a targeted reproduction of the read-only render behavior.
+This document revises an external LLM review against the current repository
+state. It keeps only the issues and improvement directions that remain valid
+after checking the local source tree, documentation, tests, CI configuration,
+GitHub repository metadata, the current GitHub release, and the PyPI project
+namespace.
 
-This is not a full CI rerun or an aesthetic evaluation of generated music. It is best treated as a release-readiness and refactoring-backlog review.
+Targeted verification command:
 
-## Revised Score
+```bash
+uv run pytest tests/integration/test_api_artifacts.py \
+  tests/integration/test_visualization_examples.py \
+  tests/unit/test_config.py \
+  tests/unit/test_scoring.py -q
+```
 
-Reference score: **82 / 100**
+Result: `21 passed`.
 
-The score is reasonable, but the explanation needs adjustment. Kithairon's engineering baseline is stronger than some parts of the original memo imply: current CI already runs Python lint/type/test checks, frontend lint/test/e2e/build checks, and the Cremona refactor audit. At the same time, the read-only render issue is a confirmed mutation bug and should reduce the engineering-maturity assessment.
+## Current Assessment
 
-| Area | Score | Revised assessment |
-| --- | ---: | --- |
-| Positioning and completeness | 17 / 20 | The project has a clear goal: turn a monophonic melody into strict and relaxed canon variants, then write MIDI, MusicXML, JSON, Markdown reports, resolved config, and visualization artifacts. The README is enough for engineering users to get started, but the landing experience still lacks a direct musical demo. |
-| Technical implementation | 24 / 30 | The IR, transforms, rules, scoring, repair beam search, CP-SAT solver, export flow, and visualization artifacts form a real pipeline. The main deductions are the heuristic solver objective and the confirmed read-only render mutation. |
-| Engineering | 19 / 20 | Python 3.12, `uv`, Ruff, Pyright, pytest, coverage, Cremona, and GitHub Actions are in place. CI already uses `pnpm/action-setup@v6`, Node 24, and Playwright E2E. |
-| Test quality | 13 / 15 | Unit, integration, golden snapshot, property-based, and visualization example tests cover important paths. The missing pieces are a read-only render regression test and a more representative real-melody benchmark fixture set. |
-| Documentation and usability | 5 / 8 | The README, development docs, and visualization docs explain basic use and deployment. The gaps are scoring/rules assumptions, architecture explanation, FAQ, suitable and unsuitable melody types, and a top-level demo. The README output list also needs to include `visualization.json` and `artifact_index.json`. |
-| Product and open-source maturity | 4 / 7 | The repository is public, but GitHub description, topics, and releases are still empty. A CHANGELOG, contribution guide, and credible demo assets would make the project easier to trust and try. |
+The original review is still useful as release-readiness backlog input, but
+several of its concrete claims are now stale. The project now has a `v0.1.0`
+GitHub release, GitHub description, homepage, topics, `CHANGELOG.md`,
+`CONTRIBUTING.md`, README demo assets, scoring/rules documentation,
+architecture and FAQ documentation, benchmark-style example melodies, and a
+read-only render regression fix.
 
-## Acceptability
+The remaining issues are more focused:
 
-The external review can be accepted as a useful release-readiness backlog, but it should not be treated as a fully authoritative quality judgment. It did not install dependencies, run the complete test suite, or audition generated outputs, so its claims about musical quality and runtime reliability are static inferences.
+- scoring profiles exist in code and docs, but users cannot select them through
+  config, CLI, or API controls;
+- package metadata and external distribution strategy still need cleanup,
+  especially because the PyPI name is already occupied by another project;
+- example melodies are stronger now, but they are not yet a repeatable music
+  quality evaluation suite;
+- CI is broad, but it has no coverage floor or performance regression guard;
+- visualization/API production boundaries are not documented clearly enough;
+- repair and solver still duplicate some relaxed-candidate helper logic;
+- governance and security files are still incomplete.
 
-Accept directly:
+## Remaining Issues And Improvements
 
-- The README and project front page need a "30-second demo".
-- Scoring and rule assumptions should be documented in one place.
-- The read-only render endpoint writes artifacts and conflicts with read-only semantics.
-- The project lacks a real-melody benchmark set.
-- Open-source packaging is incomplete: release, CHANGELOG, description, topics, and contribution guidance are missing.
+### 1. Expose scoring profiles to users
 
-Reframe or downgrade:
+`src/kithairon/scoring/weights.py` defines `permissive`, `pop-lite`, and
+`renaissance-lite`, and `docs/scoring-and-rules.md` explains them. However,
+normal generation paths still call `score_candidate()` without passing a
+profile, so CLI/API generation effectively uses the hard-coded default
+`pop-lite`.
 
-- Concerns about incomplete CI should be downgraded. Current CI already includes `ruff`, `pyright`, `pytest`, frontend lint/test/e2e/build, and Cremona audit.
-- The suggestion to modularize and configure the solver objective is a reasonable medium-term refactor, but it should not block the next release. The safer sequence is to add documentation, benchmark fixtures, and regression tests before deciding the objective abstraction boundary.
-- Product and open-source maturity should not be conflated with core code quality. It affects adoption and trust, but it is not direct evidence about generation correctness.
+`KithaironConfig` has no `[scoring]` section, `canonize generate` has no
+`--score-profile` option, and API upload overrides do not include a score
+profile field. This makes the documented profiles look user-facing even though
+they are still mainly internal and test-facing.
 
-## Confirmed Issues
+Recommended changes:
 
-### 1. Read-only render semantics are incomplete
+- add `ScoringConfig` with `profile = "pop-lite"`;
+- validate profile names against `STYLE_PROFILES`;
+- pass `config.scoring.profile` through strict, repair, solver, and auto
+  scoring paths;
+- add `--score-profile` to `generate` and `config resolve`;
+- support score profile selection in API form/config JSON handling and Web UI
+  controls;
+- add tests proving that `renaissance-lite` and `permissive` change score
+  breakdowns through the public generation path.
 
-The candidate render path in `src/kithairon/api/routes_artifacts.py` invokes MuseScore rendering and then updates `artifact_index.json`. The current entry point checks `settings.musescore_bin`, but it does not check `settings.read_only`.
+### 2. Finish package metadata and decide the PyPI distribution strategy
 
-Targeted reproduction:
+The repository now has a GitHub release, and `pyproject.toml` includes
+Documentation and Repository URLs. As a distributable Python package, it still
+lacks common metadata fields:
 
-- Create a run with a normal app instance.
-- Start a read-only app against the same output root.
-- Configure a fake MuseScore executable and call the render endpoint.
-- The endpoint returns `200` and writes `renders/...pdf`.
+- `readme`;
+- `license`;
+- `classifiers`;
+- `keywords`;
+- an `Issues` URL.
 
-The original memo described this as a suspected read-only gap. It should now be treated as a confirmed bug. The fix should add a read-only guard to the render path and a regression test asserting that read-only render returns a `read_only_mode` error without writing render output or updating the artifact index.
+There is also a distribution-name conflict: the `kithairon` name on PyPI is
+already used by an unrelated Echo liquid handler package. This project should
+not assume it can publish to PyPI under the `kithairon` distribution name.
 
-### 2. README demo and output list are incomplete
+Recommended changes:
 
-The current README explains installation, quickstart, engine examples, strict and relaxed canons, input formats, config, errors, and the development gate. It still lacks a direct first-visit demo:
+- fill in the missing local package metadata;
+- decide whether the short-term distribution plan is GitHub-only or a distinct
+  package index name such as `kithairon-canon`;
+- document the difference between GitHub releases and package-index releases;
+- if package-index distribution is intended, add wheel/sdist build and metadata
+  verification before publishing.
 
-- An input melody.
-- A generated score screenshot.
-- A MIDI or audio demo.
-- A web visualization screenshot or short gif.
+### 3. Turn example melodies into a repeatable evaluation suite
 
-The quickstart output directory list currently names `results.json`, `report.md`, `resolved_config.toml`, `candidates/*.musicxml`, and `candidates/*.mid`. The current pipeline also writes `visualization.json` and `artifact_index.json`, so the README should be updated.
+`examples/melodies/` now includes quickstart, Bach-derived demo, folk-like,
+stepwise, chromatic, sparse, and negative fixtures. That resolves the original
+"no real examples" concern in large part, but the examples are still not an
+evaluation suite.
 
-### 3. Scoring and rules documentation is missing
+Current tests prove that each MusicXML fixture can generate visualization
+artifacts. They do not record candidate counts, score distributions, runtime,
+solver status, edit counts, listening notes, or human preference rankings. For
+a symbolic music generator, this remains the main product-quality credibility
+gap.
 
-The code already expresses clear musical assumptions, including:
+Recommended changes:
 
-- Consonant interval sets.
-- The distinction between strict and relaxed canons.
-- Strong-beat, parallel-perfect, cadence, and other rule penalties.
-- Score profiles such as `permissive`, `pop-lite`, and `renaissance-lite`.
+- add an `evaluation/` or `benchmarks/` directory;
+- record strict, repair, solver, and auto outputs for representative fixtures
+  where applicable;
+- track candidate count, top score, quality status, runtime, solver status, and
+  edit count;
+- keep short listening notes for representative top candidates;
+- add a lightweight script that refreshes `benchmark_results.json`;
+- avoid turning human preference into a brittle unit-test oracle, but keep it
+  visible when scoring changes.
 
-These assumptions are scattered across code and tests. External users cannot quickly tell:
+### 4. Add coverage and performance regression guards
 
-- Which rules are hard constraints and which are soft preferences.
-- How weights affect candidate ranking.
-- Which style each score profile targets.
-- Which melody types are likely to fail.
-- Why a relaxed canon is still treated as a canon variant.
+CI now includes Python lint/format/type/test, frontend lint/test/e2e/build, docs
+build, and Cremona refactor audit. This is stronger than the original review
+implied. The remaining gap is that CI does not enforce a coverage floor or
+performance budget.
 
-Add `docs/scoring-and-rules.md` and link it from the README.
+Current state:
 
-### 4. Real-melody benchmarks are limited
+- `coverage` is installed and used by the Cremona audit;
+- there is no `coverage report --fail-under=...`;
+- there is no `tests/performance/` or benchmark check;
+- solver metadata records wall time and max time, but tests do not use that data
+  as a regression constraint.
 
-`examples/melodies/` already contains basic examples and `bad_for_canon`, and visualization examples are covered by tests. It is still not a benchmark suite that represents product boundaries.
+Recommended changes:
 
-Recommended additions:
+- measure the current baseline, then set a modest coverage fail-under;
+- add performance tests or benchmark scripts for representative melodies;
+- cover strict enumeration size, repair beam settings, solver timeout behavior,
+  and API generation latency for small inputs;
+- keep expensive benchmarks outside the default unit-test path if they are too
+  costly for every pull request.
 
-- Folk melody.
-- Children's song.
-- Stepwise diatonic melody.
-- Chromatic melody.
-- Rhythmically sparse melody.
-- Negative example that is poor material for canon.
+### 5. Document visualization/API production boundaries
 
-Each fixture should record the intended engine, typical output, human notes, and known failure modes. This set does not need to be a hard golden oracle at first, but it should become a repeatable observation suite for solver and scoring changes.
+The API already has important safety boundaries: upload suffix allowlisting, a
+default 10 MiB upload limit, read-only mode, CORS allowlist configuration,
+artifact-index path validation, and read-only render blocking. The remaining
+gap is deployment documentation rather than a confirmed code bug.
 
-### 5. Open-source release metadata is incomplete
+`docs/visualization.md` explains development servers, production build serving,
+and MuseScore rendering. It does not yet systematically cover:
 
-Current repository metadata remains sparse:
+- cleanup for uploads and `runs/_uploads`;
+- disk quota expectations;
+- concurrency limits;
+- reverse-proxy request body limits;
+- authentication expectations before exposing write endpoints;
+- CORS configuration risks;
+- where to place `--output-root` in production;
+- whether public demos should run with `--read-only`.
 
-- Description is empty.
-- Topics are empty.
-- Latest release is empty.
-- Stars and forks are both zero.
+Recommended changes:
 
-Stars and forks are not quality problems by themselves, but description, topics, release notes, CHANGELOG, and contribution guidance are part of a credible public release. Fill these before v0.1.0.
+- add a "Production notes" section to `docs/visualization.md`;
+- recommend `--read-only` for public browsing of pre-generated runs;
+- document cleanup and retention expectations for `runs/` and `_uploads/`;
+- recommend body-size and rate limits at the reverse-proxy layer;
+- state that upload/render endpoints should not be publicly exposed without an
+  authentication or isolation plan.
 
-## Recommended Priority
+### 6. Keep relaxed-candidate helper refactoring on the backlog
+
+The solver objective has already been split into
+`src/kithairon/engines/solver_objective.py`, so the original "modularize solver
+objective" recommendation should be downgraded. The still-valid concern is that
+repair and solver duplicate some related concepts:
+
+- selecting strict bases that can be relaxed;
+- identifying follower-related violations;
+- summarizing violations into `bad_windows`;
+- carrying base strict score and base transform metadata;
+- representing edit-plan metadata.
+
+This should not block current release work, but it is a reasonable maintenance
+backlog item before adding rhythm repair, ornament repair, or more solver
+objectives.
+
+Recommended changes:
+
+- wait until benchmark fixtures are stable, then extract a small
+  `engines/relaxed_common.py`;
+- keep the helper layer data-oriented and narrow;
+- add regression tests for metadata shape before moving code.
+
+### 7. Add remaining governance and security files
+
+The repository now has `CHANGELOG.md`, `CONTRIBUTING.md`, Apache-2.0 license,
+GitHub CI, release notes, and repository topics. It still lacks:
+
+- `SECURITY.md`;
+- `CODE_OF_CONDUCT.md`;
+- `.github/ISSUE_TEMPLATE/`;
+- `.github/PULL_REQUEST_TEMPLATE.md`.
+
+`SECURITY.md` is the highest-priority item in this group because the project
+includes a FastAPI upload/render surface, even if it is currently positioned as
+a public preview.
+
+Recommended changes:
+
+- add a concise security policy with supported versions and vulnerability
+  reporting path;
+- add issue templates for bug reports, generation-quality reports, and docs
+  issues;
+- add a PR template that reminds contributors to run Python, frontend, docs, and
+  relevant visualization/example checks.
+
+## Priority Order
 
 P0:
 
-- Fix the read-only render mutation bug.
-- Add a read-only render regression test that proves render output and artifact index updates are blocked.
+- expose scoring profile selection so config, CLI, and API behavior match the
+  documentation;
+- document API production deployment boundaries.
 
 P1:
 
-- Update the README quickstart output list to include `visualization.json` and `artifact_index.json`.
-- Add a top-level 30-second demo with input, generated score, MIDI/audio, or a short gif.
-- Add `docs/scoring-and-rules.md` covering scoring philosophy, hard and soft rules, profiles, and failure modes.
+- finish package metadata and decide the package-index name strategy;
+- add an example melody benchmark/evaluation directory.
 
 P2:
 
-- Build a real-melody benchmark/examples set.
-- Add GitHub description, topics, CHANGELOG, and contribution guidance.
-- Publish a `v0.1.0` release.
+- add coverage fail-under and performance regression checks;
+- add `SECURITY.md` and GitHub issue/PR templates.
 
 P3:
 
-- After benchmarks and documentation are stable, revisit solver objective modularization and configurability.
-- Split solver objective constants, cadence preferences, pitch-option search, and edit weighting into clearer test units.
+- refactor shared relaxed-candidate helper logic after benchmark coverage is
+  strong enough to protect behavior.
 
-## Revised Core Recommendations
+## Revised Core Recommendation
 
-1. **Fix API read-only semantics first.** This is a confirmed behavior bug, not just documentation or packaging work.
-2. **Make the README show the result faster.** The README is serviceable for engineering use, but it does not yet create a quick musical first impression.
-3. **Document scoring and rules.** Users should understand Kithairon's rule preferences, style assumptions, and relaxed-canon boundary.
-4. **Use real melody fixtures to constrain future refactors.** Establish repeatable examples before changing solver or scoring behavior.
-5. **Complete the public-release wrapper.** Description, topics, CHANGELOG, release notes, and contribution guidance will reduce the cost of trying the project.
+Kithairon is now a credible `0.1.0` public preview; the remaining work is no
+longer basic project setup. The most valuable next steps are to make documented
+scoring controls real user-facing controls, make musical quality evaluation
+repeatable, define the Python package distribution strategy, and document the
+production boundaries of the visualization API.
 
-## Final Judgment
+## External Verification Sources
 
-The original review's direction is acceptable, but it needs to be aligned with current repository facts. Kithairon is not missing basic engineering safeguards; the current concerns are more specific: one confirmed API mutation bug, documentation clarity, demo presentation, real-sample validation, and release packaging.
-
-Accept the review as a prioritized improvement backlog, not as a set of equally urgent release blockers.
+- GitHub release: <https://github.com/NeapolitanIcecream/kithairon/releases/tag/v0.1.0>
+- PyPI `kithairon` project name: <https://pypi.org/project/kithairon/>
