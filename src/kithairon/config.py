@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import tomllib
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -35,6 +36,17 @@ type TransformName = Literal[
 
 class ConfigModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+@dataclass(frozen=True)
+class ConfigOverrideOptions:
+    chord_policy: str | None = None
+    part_policy: str | None = None
+    part_index: int | None = None
+    engine: str | None = None
+    top_k: int | None = None
+    score_profile: str | None = None
+    solver_enabled: bool | None = None
 
 
 def normalize_cli_token(value: str) -> str:
@@ -258,46 +270,42 @@ def deep_merge(base: Mapping[str, object], overrides: Mapping[str, object]) -> d
     return merged
 
 
-def build_config_overrides(
-    *,
-    chord_policy: str | None = None,
-    part_policy: str | None = None,
-    part_index: int | None = None,
-    engine: str | None = None,
-    top_k: int | None = None,
-    score_profile: str | None = None,
-    solver_enabled: bool | None = None,
-) -> dict[str, object]:
+def build_config_overrides(options: ConfigOverrideOptions) -> dict[str, object]:
+    sections = {
+        "input": _input_overrides(options),
+        "generation": _generation_overrides(options),
+        "scoring": _scoring_overrides(options),
+        "solver": _solver_overrides(options),
+    }
+    return {name: values for name, values in sections.items() if values}
+
+
+def _input_overrides(options: ConfigOverrideOptions) -> dict[str, object]:
     overrides: dict[str, object] = {}
-    input_overrides: dict[str, object] = {}
-    generation_overrides: dict[str, object] = {}
-    scoring_overrides: dict[str, object] = {}
-    solver_overrides: dict[str, object] = {}
-
-    if chord_policy is not None:
-        input_overrides["chord_policy"] = normalize_cli_token(chord_policy)
-    if part_policy is not None:
-        input_overrides["part_policy"] = normalize_cli_token(part_policy)
-    if part_index is not None:
-        input_overrides["part_index"] = part_index
-    if engine is not None:
-        generation_overrides["engine"] = normalize_cli_token(engine)
-    if top_k is not None:
-        generation_overrides["top_k"] = top_k
-    if score_profile is not None:
-        scoring_overrides["profile"] = score_profile
-    if solver_enabled is not None:
-        solver_overrides["enabled"] = solver_enabled
-
-    if input_overrides:
-        overrides["input"] = input_overrides
-    if generation_overrides:
-        overrides["generation"] = generation_overrides
-    if scoring_overrides:
-        overrides["scoring"] = scoring_overrides
-    if solver_overrides:
-        overrides["solver"] = solver_overrides
+    if options.chord_policy is not None:
+        overrides["chord_policy"] = normalize_cli_token(options.chord_policy)
+    if options.part_policy is not None:
+        overrides["part_policy"] = normalize_cli_token(options.part_policy)
+    if options.part_index is not None:
+        overrides["part_index"] = options.part_index
     return overrides
+
+
+def _generation_overrides(options: ConfigOverrideOptions) -> dict[str, object]:
+    overrides: dict[str, object] = {}
+    if options.engine is not None:
+        overrides["engine"] = normalize_cli_token(options.engine)
+    if options.top_k is not None:
+        overrides["top_k"] = options.top_k
+    return overrides
+
+
+def _scoring_overrides(options: ConfigOverrideOptions) -> dict[str, object]:
+    return {} if options.score_profile is None else {"profile": options.score_profile}
+
+
+def _solver_overrides(options: ConfigOverrideOptions) -> dict[str, object]:
+    return {} if options.solver_enabled is None else {"enabled": options.solver_enabled}
 
 
 def write_resolved_config(config: KithaironConfig, path: Path) -> None:

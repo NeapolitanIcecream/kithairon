@@ -12,7 +12,12 @@ from rich.console import Console
 
 from kithairon import __version__
 from kithairon.adapters.music21_parse import parse_melody
-from kithairon.config import build_config_overrides, load_config, write_resolved_config
+from kithairon.config import (
+    ConfigOverrideOptions,
+    build_config_overrides,
+    load_config,
+    write_resolved_config,
+)
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import GenerationRun, run_generation
 
@@ -37,6 +42,12 @@ class GenerateCommandOptions:
     top_k: int | None
     score_profile: str | None
     overwrite: bool
+
+
+@dataclass(frozen=True)
+class ExtraCommandOptions:
+    overwrite: bool = False
+    score_profile: str | None = None
 
 
 def _option(*param_decls: str, **kwargs: Any) -> object:
@@ -128,9 +139,11 @@ def validate(
 ) -> None:
     """Validate that an input file can be parsed as a monophonic melody."""
     overrides = build_config_overrides(
-        chord_policy=chord_policy,
-        part_policy=part_policy,
-        part_index=part_index,
+        ConfigOverrideOptions(
+            chord_policy=chord_policy,
+            part_policy=part_policy,
+            part_index=part_index,
+        )
     )
     try:
         config = load_config(config_path, overrides)
@@ -160,9 +173,9 @@ def generate(
     chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
-    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Generate strict canon candidates and write export/report artifacts."""
+    extra_options = _generate_extra_options()
     payload = _run_generate_command(
         input_path=input_path,
         out=out,
@@ -171,8 +184,8 @@ def generate(
             chord_policy=chord_policy,
             engine=engine,
             top_k=top_k,
-            score_profile=score_profile,
-            overwrite=_generate_overwrite_flag(),
+            score_profile=extra_options.score_profile,
+            overwrite=extra_options.overwrite,
         ),
     )
     console.print_json(data=payload)
@@ -185,10 +198,12 @@ def _run_generate_command(
     options: GenerateCommandOptions,
 ) -> dict[str, object]:
     overrides = build_config_overrides(
-        chord_policy=options.chord_policy,
-        engine=options.engine,
-        top_k=options.top_k,
-        score_profile=options.score_profile,
+        ConfigOverrideOptions(
+            chord_policy=options.chord_policy,
+            engine=options.engine,
+            top_k=options.top_k,
+            score_profile=options.score_profile,
+        )
     )
     try:
         config = load_config(options.config_path, overrides)
@@ -201,16 +216,45 @@ def _run_generate_command(
     return _generation_success_payload(generation)
 
 
-def _generate_overwrite_flag() -> bool:
+def _generate_extra_options() -> ExtraCommandOptions:
     context = get_current_context(silent=True)
-    extra_args = [] if context is None else list(context.args)
+    return _parse_extra_options(
+        [] if context is None else list(context.args),
+        allow_overwrite=True,
+    )
+
+
+def _resolve_extra_options() -> ExtraCommandOptions:
+    context = get_current_context(silent=True)
+    return _parse_extra_options(
+        [] if context is None else list(context.args),
+        allow_overwrite=False,
+    )
+
+
+def _parse_extra_options(extra_args: list[str], *, allow_overwrite: bool) -> ExtraCommandOptions:
     overwrite = overwrite_output
-    for arg in extra_args:
+    score_profile: str | None = None
+    index = 0
+    while index < len(extra_args):
+        arg = extra_args[index]
         if arg == "--overwrite":
+            if not allow_overwrite:
+                raise UsageError(f"Unsupported option or argument: {arg}")
             overwrite = True
+            index += 1
+        elif arg == "--score-profile":
+            try:
+                score_profile = extra_args[index + 1]
+            except IndexError as exc:
+                raise UsageError("--score-profile requires a value") from exc
+            index += 2
+        elif arg.startswith("--score-profile="):
+            score_profile = arg.split("=", maxsplit=1)[1]
+            index += 1
         else:
-            raise UsageError(f"Unsupported generate option or argument: {arg}")
-    return overwrite
+            raise UsageError(f"Unsupported option or argument: {arg}")
+    return ExtraCommandOptions(overwrite=overwrite, score_profile=score_profile)
 
 
 def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
@@ -227,7 +271,9 @@ def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
     }
 
 
-@config_app.command("resolve")
+@config_app.command(
+    "resolve", context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
 def resolve_config(
     config_path: Annotated[Path | None, CONFIG_PATH_OPTION] = None,
     out: Annotated[Path | None, OUT_PATH_OPTION] = None,
@@ -235,14 +281,16 @@ def resolve_config(
     chord_policy: Annotated[str | None, CHORD_POLICY_OPTION] = None,
     engine: Annotated[str | None, ENGINE_OPTION] = None,
     top_k: Annotated[int | None, TOP_K_OPTION] = None,
-    score_profile: Annotated[str | None, SCORE_PROFILE_OPTION] = None,
 ) -> None:
     """Load config defaults, apply overrides, and print or write the resolved config."""
+    extra_options = _resolve_extra_options()
     overrides = build_config_overrides(
-        chord_policy=chord_policy,
-        engine=engine,
-        top_k=top_k,
-        score_profile=score_profile,
+        ConfigOverrideOptions(
+            chord_policy=chord_policy,
+            engine=engine,
+            top_k=top_k,
+            score_profile=extra_options.score_profile,
+        )
     )
     try:
         config = load_config(config_path, overrides)

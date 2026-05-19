@@ -12,7 +12,13 @@ from pydantic import BaseModel, Field
 from rich.console import Console
 
 from kithairon import __version__
-from kithairon.config import KithaironConfig, build_config_overrides, deep_merge, load_config
+from kithairon.config import (
+    ConfigOverrideOptions,
+    KithaironConfig,
+    build_config_overrides,
+    deep_merge,
+    load_config,
+)
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import run_generation
 from kithairon.visualization.artifact_index import (
@@ -305,15 +311,7 @@ def main() -> None:
 async def _create_run_from_request(request: Any, settings: ApiSettings) -> dict[str, object]:
     upload = await _read_upload_request(request, settings)
     input_path, output_dir = _store_upload(settings, upload)
-    request_config = _request_config(
-        config_json=upload.config_json,
-        top_k=upload.top_k,
-        engine=upload.engine,
-        score_profile=upload.score_profile,
-        chord_policy=upload.chord_policy,
-        part_policy=upload.part_policy,
-        part_index=upload.part_index,
-    )
+    request_config = _request_config(upload)
     generation = run_generation(input_path, output_dir, request_config, overwrite_output=True)
     return read_json_object(generation.visualization_path)
 
@@ -418,24 +416,17 @@ def _safe_upload_filename(filename: str | None) -> str:
     return safe_name
 
 
-def _request_config(
-    *,
-    config_json: str | None,
-    top_k: int | None,
-    engine: str | None,
-    score_profile: str | None,
-    chord_policy: str | None,
-    part_policy: str | None,
-    part_index: int | None,
-) -> KithaironConfig:
-    config_data = _config_payload(config_json)
+def _request_config(upload: RunUploadRequest) -> KithaironConfig:
+    config_data = _config_payload(upload.config_json)
     overrides = build_config_overrides(
-        chord_policy=chord_policy,
-        part_policy=part_policy,
-        part_index=part_index,
-        engine=engine,
-        top_k=top_k,
-        score_profile=score_profile,
+        ConfigOverrideOptions(
+            chord_policy=upload.chord_policy,
+            part_policy=upload.part_policy,
+            part_index=upload.part_index,
+            engine=upload.engine,
+            top_k=upload.top_k,
+            score_profile=upload.score_profile,
+        )
     )
     return load_config(None, deep_merge(config_data, overrides))
 
