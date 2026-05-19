@@ -31,9 +31,7 @@ def build_artifact_index(
         "run_artifacts": {
             kind: run_artifacts[kind] for kind in RUN_ARTIFACTS if kind in run_artifacts
         },
-        "candidates": {
-            candidate.id: _candidate_artifacts(candidate) for candidate in candidates
-        },
+        "candidates": {candidate.id: _candidate_artifacts(candidate) for candidate in candidates},
     }
 
 

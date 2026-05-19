@@ -62,9 +62,7 @@ def test_run_upload_honors_read_only_mode(tmp_path: Path) -> None:
 
 
 def test_cors_allows_configured_origin(tmp_path: Path) -> None:
-    client = TestClient(
-        create_app(output_root=tmp_path, cors_origins=("http://localhost:5173",))
-    )
+    client = TestClient(create_app(output_root=tmp_path, cors_origins=("http://localhost:5173",)))
 
     response = client.options(
         "/api/health",

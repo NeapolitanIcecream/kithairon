@@ -30,9 +30,7 @@ def test_materialize_candidate_makes_note_ids_unique_per_voice() -> None:
 
 def test_materialize_candidate_derives_range_violation_position_from_event() -> None:
     candidate = _candidate(
-        follower_events=(
-            NoteEvent(id="n0001", pitch=95, start=Fraction(5), duration=Fraction(1)),
-        ),
+        follower_events=(NoteEvent(id="n0001", pitch=95, start=Fraction(5), duration=Fraction(1)),),
         violations=(
             RuleViolation(
                 rule_id="range",
