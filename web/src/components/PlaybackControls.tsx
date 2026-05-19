@@ -54,7 +54,7 @@ export function PlaybackControls({ candidate, onActiveEventIdsChange }: Playback
     }
     stopClock(frameRef)
     try {
-      await controller.play(notes, {
+      const playbackStarted = await controller.play(notes, {
         positionQ: startPositionQ,
         tempoMultiplier: tempo,
         onEnded: () => {
@@ -64,6 +64,9 @@ export function PlaybackControls({ candidate, onActiveEventIdsChange }: Playback
           onActiveEventIdsChange([])
         },
       })
+      if (!playbackStarted) {
+        return
+      }
       clockRef.current = {
         startedAt: performance.now(),
         startPositionQ,

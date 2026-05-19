@@ -11,10 +11,14 @@ export type TonePlaybackOptions = {
 export class TonePlaybackController {
   private synth: Tone.PolySynth<Tone.Synth> | null = null
   private endTimer: number | null = null
+  private playbackVersion = 0
 
-  async play(notes: PlaybackNote[], options: TonePlaybackOptions): Promise<void> {
-    this.stop()
+  async play(notes: PlaybackNote[], options: TonePlaybackOptions): Promise<boolean> {
+    const playbackVersion = this.cancelPlayback()
     await Tone.start()
+    if (playbackVersion !== this.playbackVersion) {
+      return false
+    }
     const synth = this.getSynth()
     const secondsPerQuarter = quarterSeconds(options.tempoMultiplier)
     const now = Tone.now()
@@ -38,22 +42,19 @@ export class TonePlaybackController {
 
     const remainingSeconds = Math.max(0, lastEndQ - options.positionQ) * secondsPerQuarter
     this.endTimer = window.setTimeout(options.onEnded, remainingSeconds * 1000 + 80)
+    return true
   }
 
   pause(): void {
-    this.stopTimer()
-    this.synth?.releaseAll()
+    this.cancelPlayback()
   }
 
   stop(): void {
-    this.stopTimer()
-    this.synth?.releaseAll()
+    this.cancelPlayback()
   }
 
   dispose(): void {
-    this.stop()
-    this.synth?.dispose()
-    this.synth = null
+    this.cancelPlayback()
   }
 
   private getSynth(): Tone.PolySynth<Tone.Synth> {
@@ -73,5 +74,18 @@ export class TonePlaybackController {
       window.clearTimeout(this.endTimer)
       this.endTimer = null
     }
+  }
+
+  private cancelPlayback(): number {
+    this.playbackVersion += 1
+    this.stopTimer()
+    const synth = this.synth
+    if (synth === null) {
+      return this.playbackVersion
+    }
+    synth.releaseAll()
+    synth.dispose()
+    this.synth = null
+    return this.playbackVersion
   }
 }
