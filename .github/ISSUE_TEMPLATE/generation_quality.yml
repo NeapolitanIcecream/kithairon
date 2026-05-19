@@ -1,0 +1,37 @@
+name: Generation quality report
+description: Share a melody where candidate ranking, repair, or solver output seems musically weak.
+title: "[Quality]: "
+labels: ["generation-quality"]
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Input melody
+      description: Attach the MIDI/MusicXML file or describe the melody if you cannot share the file.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and config
+      description: Include engine, score profile, top-k, solver settings, and any config file overrides.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Observed output
+      description: Note candidate id, score, quality status, edit plan, and what sounded or looked wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: preference
+    attributes:
+      label: Preferred behavior
+      description: Describe the musical result you expected or which candidate sounded better than the top-ranked one.
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Relevant artifacts
+      description: Paste report excerpts or attach `results.json`, `visualization.json`, screenshots, MIDI, or MusicXML outputs.
