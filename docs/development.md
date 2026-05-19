@@ -72,6 +72,10 @@ tests/
   golden/
 examples/
   melodies/
+CHANGELOG.md
+CONTRIBUTING.md
 quality/
   refactor-baseline.json
 ```
+
+`examples/melodies/README.md` describes the melody fixtures used for quickstart and benchmark-style coverage.

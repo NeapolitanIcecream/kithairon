@@ -4,6 +4,26 @@ Kithairon is a small symbolic music compiler that turns a monophonic melody into
 
 Use it from the `canonize` CLI with MIDI or MusicXML input. Each generation run writes playable files, a machine-readable result file, the resolved config, and a Markdown report.
 
+## 30-Second Demo
+
+Run Kithairon on the bundled MusicXML fragment:
+
+```bash
+uv run canonize generate examples/melodies/scale_c_major.musicxml \
+  --out tmp/demo \
+  --engine strict \
+  --top-k 1
+```
+
+The input is a short monophonic C-major melody. The generated output is a two-voice canon candidate with:
+
+- `tmp/demo/candidates/*.musicxml`: a score you can open in a notation editor.
+- `tmp/demo/candidates/*.mid`: a playable MIDI file.
+- `tmp/demo/report.md`: the score summary and rule penalties.
+- `tmp/demo/visualization.json`: data for the web visualization.
+
+To inspect the same run in the browser, start the visualization API and frontend as described in [Visualization](docs/visualization.md), then upload `examples/melodies/scale_c_major.musicxml`.
+
 ## Requirements
 
 - Python 3.12 or newer
@@ -51,6 +71,8 @@ The output directory contains:
 - `results.json`: full candidate data, scores, violations, transforms, and output paths.
 - `report.md`: a readable summary of top candidates and penalty reasons.
 - `resolved_config.toml`: the exact config used for the run.
+- `visualization.json`: normalized data for the web visualization.
+- `artifact_index.json`: the safe download map used by the API and web UI.
 - `candidates/*.musicxml` and `candidates/*.mid`: playable exports for each candidate.
 
 A successful command returns a compact JSON payload:
@@ -63,7 +85,9 @@ A successful command returns a compact JSON payload:
   "candidates": 3,
   "results": "tmp/strict/results.json",
   "report": "tmp/strict/report.md",
-  "resolved_config": "tmp/strict/resolved_config.toml"
+  "resolved_config": "tmp/strict/resolved_config.toml",
+  "visualization": "tmp/strict/visualization.json",
+  "artifact_index": "tmp/strict/artifact_index.json"
 }
 ```
 
@@ -119,6 +143,8 @@ uv run canonize generate examples/melodies/bad_for_canon.musicxml \
 A strict canon has `strict_canon: true` and `canon_label: "strict canon"` in `results.json`. The follower is exactly produced from the source melody by the recorded `transform_spec`, for example transposition, inversion, retrograde, augmentation, or diminution with a delay.
 
 A relaxed canon has `strict_canon: false` and `canon_label: "relaxed canon"`. It still records the source transform and candidate lineage, but the repair or solver engine may change follower pitches under configured edit limits. The report includes the edit plan and the rule penalties that remain after the edits.
+
+For the musical assumptions behind the score, see [Scoring And Rules](docs/scoring-and-rules.md).
 
 ## Input Files
 
@@ -204,3 +230,5 @@ Preview the documentation site:
 ```bash
 uv run --extra docs mkdocs serve
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request checks and [CHANGELOG.md](CHANGELOG.md) for release notes.

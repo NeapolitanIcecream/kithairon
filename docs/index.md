@@ -14,6 +14,8 @@ Each generation run writes:
 - `results.json`
 - `report.md`
 - `resolved_config.toml`
+- `visualization.json`
+- `artifact_index.json`
 - `candidates/*.musicxml`
 - `candidates/*.mid`
 
@@ -30,5 +32,7 @@ Inputs are monophonic by default. Chord input fails unless you set `--chord-poli
 - `repair`: local follower-note edits from a strict candidate, marked `canon_label: "relaxed canon"`.
 - `solver`: optional OR-Tools CP-SAT relaxed candidate search.
 - `auto`: strict first, then repair, and solver only when `[solver].enabled = true` and the dependency is installed.
+
+See [Scoring And Rules](scoring-and-rules.md) for the rule weights, score profiles, and strict-versus-relaxed canon semantics.
 
 See the repository README for command examples and output details.

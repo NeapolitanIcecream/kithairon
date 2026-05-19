@@ -4,5 +4,6 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Scoring And Rules: scoring-and-rules.md
   - Development: development.md
   - Visualization: visualization.md

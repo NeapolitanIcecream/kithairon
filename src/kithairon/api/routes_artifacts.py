@@ -153,6 +153,12 @@ def _render_candidate_response(
     candidate_id: str,
     request: RenderRequest,
 ) -> dict[str, object]:
+    if settings.read_only:
+        raise ApiError(
+            "This server is running in read-only mode.",
+            code="read_only_mode",
+            status_code=403,
+        )
     if settings.musescore_bin is None:
         raise ApiError(
             "MuseScore CLI is not configured. Set MUSESCORE_BIN or --musescore-bin.",

@@ -16,9 +16,7 @@ def test_artifact_endpoints_serve_generated_run_files(tmp_path: Path) -> None:
 
     visualization = client.get(f"/api/runs/{run['run_id']}/visualization")
     report = client.get(f"/api/runs/{run['run_id']}/artifact/report")
-    musicxml = client.get(
-        f"/api/runs/{run['run_id']}/candidates/{candidate_id}/musicxml"
-    )
+    musicxml = client.get(f"/api/runs/{run['run_id']}/candidates/{candidate_id}/musicxml")
     midi = client.get(f"/api/runs/{run['run_id']}/candidates/{candidate_id}/midi")
     candidate = client.get(f"/api/runs/{run['run_id']}/candidates/{candidate_id}")
 
@@ -64,12 +62,38 @@ def test_candidate_artifact_endpoint_returns_missing_candidate_error(tmp_path: P
     client = TestClient(create_app(output_root=tmp_path))
     run = _create_run(client)
 
-    response = client.get(
-        f"/api/runs/{run['run_id']}/candidates/missing/artifact/musicxml"
-    )
+    response = client.get(f"/api/runs/{run['run_id']}/candidates/missing/artifact/musicxml")
 
     assert response.status_code == 400
     assert response.json()["code"] == "artifact_index_error"
+
+
+def test_render_endpoint_honors_read_only_mode(tmp_path: Path) -> None:
+    """Regression: read-only API mode must not create render artifacts."""
+    write_client = TestClient(create_app(output_root=tmp_path))
+    run = _create_run(write_client)
+    run_id = cast(str, run["run_id"])
+    candidate_id = _first_candidate_id(run)
+    artifact_index = tmp_path / run_id / "artifact_index.json"
+    artifact_index_before = artifact_index.read_text(encoding="utf-8")
+    fake_musescore = _fake_musescore_bin(tmp_path)
+    read_only_client = TestClient(
+        create_app(
+            output_root=tmp_path,
+            read_only=True,
+            musescore_bin=fake_musescore,
+        )
+    )
+
+    response = read_only_client.post(
+        f"/api/runs/{run_id}/candidates/{candidate_id}/render",
+        json={"formats": ["pdf"]},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "read_only_mode"
+    assert artifact_index.read_text(encoding="utf-8") == artifact_index_before
+    assert not (tmp_path / run_id / "renders").exists()
 
 
 def _create_run(client: TestClient) -> dict[str, Any]:
@@ -86,3 +110,23 @@ def _create_run(client: TestClient) -> dict[str, Any]:
 def _first_candidate_id(run: dict[str, Any]) -> str:
     candidates = cast(list[dict[str, Any]], run["candidates"])
     return cast(str, candidates[0]["candidate_id"])
+
+
+def _fake_musescore_bin(tmp_path: Path) -> Path:
+    executable = tmp_path / "fake-musescore"
+    executable.write_text(
+        """#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+args = sys.argv[1:]
+if "-o" not in args:
+    raise SystemExit(2)
+output_path = Path(args[args.index("-o") + 1])
+output_path.parent.mkdir(parents=True, exist_ok=True)
+output_path.write_bytes(b"%PDF-1.4\\n")
+""",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    return executable
