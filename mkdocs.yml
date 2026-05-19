@@ -4,8 +4,10 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Demo: demo.md
   - Scoring And Rules: scoring-and-rules.md
   - Architecture: architecture.md
   - FAQ: faq.md
+  - Deployment: deployment.md
   - Development: development.md
   - Visualization: visualization.md

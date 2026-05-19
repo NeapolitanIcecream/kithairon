@@ -28,6 +28,12 @@ uv run pyright
 uv run pytest
 ```
 
+Build the documentation site when touching `README.md`, `docs/`, or `mkdocs.yml`:
+
+```bash
+bash scripts/build-docs.sh
+```
+
 Run the frontend gate when touching `web/`:
 
 ```bash
@@ -65,6 +71,12 @@ Preview the documentation site with:
 
 ```bash
 uv run --extra docs mkdocs serve
+```
+
+Build the deployment artifact with:
+
+```bash
+bash scripts/build-docs.sh
 ```
 
 ## Release Notes

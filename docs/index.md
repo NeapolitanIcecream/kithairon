@@ -19,6 +19,10 @@ Each generation run writes:
 - `candidates/*.musicxml`
 - `candidates/*.mid`
 
+## Demo
+
+The [Demo](demo.md) page includes the Bach-derived preview from commit `7060228`, with embedded MP3 players for the selected repair candidate and two strict comparison candidates.
+
 ## Supported Input
 
 - MIDI: `.mid`, `.midi`

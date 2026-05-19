@@ -20,6 +20,14 @@ Preview this documentation site:
 uv run --extra docs mkdocs serve
 ```
 
+Build the deployment artifact:
+
+```bash
+bash scripts/build-docs.sh
+```
+
+Cloudflare Pages deployment settings are documented in [Deployment](deployment.md).
+
 ## Quality Checks
 
 Run the full local gate before handing off changes:
@@ -29,6 +37,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run pyright
 uv run pytest
+bash scripts/build-docs.sh
 ```
 
 ## Refactor Audit

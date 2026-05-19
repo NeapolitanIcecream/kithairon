@@ -225,6 +225,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run pyright
 uv run pytest
+bash scripts/build-docs.sh
 ```
 
 Run the Cremona refactor audit:
@@ -246,5 +247,13 @@ Preview the documentation site:
 ```bash
 uv run --extra docs mkdocs serve
 ```
+
+Build the documentation site for deployment:
+
+```bash
+bash scripts/build-docs.sh
+```
+
+Deploy the documentation with Cloudflare Pages Git integration using `pip install uv && uv run --extra docs mkdocs build --strict` as the build command and `site` as the build output directory. See [Deployment](docs/deployment.md) for the full Pages settings.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request checks and [CHANGELOG.md](CHANGELOG.md) for release notes.
