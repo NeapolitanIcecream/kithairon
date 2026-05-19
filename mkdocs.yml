@@ -9,6 +9,7 @@ nav:
   - Scoring And Rules: scoring-and-rules.md
   - Architecture: architecture.md
   - FAQ: faq.md
+  - Package Distribution: package-distribution.md
   - Deployment: deployment.md
   - Development: development.md
   - Visualization: visualization.md

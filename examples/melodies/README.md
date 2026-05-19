@@ -20,3 +20,11 @@ When scoring or solver behavior changes, run the visualization example test to m
 ```bash
 uv run pytest tests/integration/test_visualization_examples.py -q
 ```
+
+For repeatable quality observations, refresh the benchmark summary from the repository root:
+
+```bash
+uv run python benchmarks/benchmark_melodies.py
+```
+
+The committed `benchmarks/benchmark_results.json` records candidate counts, top scores, quality statuses, runtime, solver status, edit counts, and short listening notes for representative fixtures. Treat the listening notes as review context, not as brittle unit-test oracles.

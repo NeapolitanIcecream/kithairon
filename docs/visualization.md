@@ -46,7 +46,7 @@ Vite proxies `/api` to `http://127.0.0.1:8000`. Open the Vite URL, usually `http
 ## Upload and inspect a melody
 
 1. Select a `.mid`, `.midi`, `.musicxml`, `.xml`, or `.mxl` file.
-2. Choose `Engine`, `Top K`, `Chord policy`, and `Part policy`.
+2. Choose `Engine`, `Top K`, `Score profile`, `Chord policy`, and `Part policy`.
 3. Click `Generate`.
 4. Select a candidate in the candidate table.
 
@@ -100,6 +100,18 @@ uv run canonize-web --output-root ./runs --serve-frontend web/dist
 ```
 
 The API routes remain under `/api`. Static frontend files are served from `web/dist`.
+
+## Production notes
+
+Run public browsing deployments with `--read-only` whenever users only need to inspect pre-generated runs. Read-only mode blocks uploads and score-render mutations while still serving existing `visualization.json`, artifacts, and downloads registered in `artifact_index.json`.
+
+Place `--output-root` on durable storage with a clear retention policy. Generated runs, rendered scores, and `runs/_uploads/` can grow with every request; prune old run directories and upload staging directories on a schedule that matches your demo or deployment policy. Set disk quota alerts outside Kithairon before exposing a long-lived service.
+
+Keep write endpoints private unless the deployment has an authentication or isolation plan. Upload and render routes accept user-provided files and can trigger CPU, memory, disk, and optional MuseScore work, so public demos should either run read-only or sit behind authentication, request-rate limits, and per-instance isolation.
+
+Set body-size and rate limits in the reverse proxy. Match the proxy request-body limit to the API upload limit, which defaults to 10 MiB, and reject oversized requests before they reach the Python process. Use conservative worker and concurrency settings for small hosts because MusicXML parsing, generation, solver fallback, and MuseScore rendering can all be CPU-bound.
+
+Configure CORS narrowly. Only pass `--cors-origin` for trusted frontend origins, and avoid wildcard origins on deployments that expose upload or render routes.
 
 ## Troubleshooting
 

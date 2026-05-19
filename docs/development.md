@@ -36,8 +36,16 @@ Run the full local gate before handing off changes:
 uv run ruff check .
 uv run ruff format --check .
 uv run pyright
-uv run pytest
+uv run coverage run -m pytest
+uv run coverage report
+uv run pytest benchmarks/test_performance_budgets.py -q
 bash scripts/build-docs.sh
+```
+
+Refresh benchmark observations when scoring, solver, repair, or example melodies change:
+
+```bash
+uv run python benchmarks/benchmark_melodies.py
 ```
 
 ## Refactor Audit
@@ -81,6 +89,9 @@ tests/
   golden/
 examples/
   melodies/
+benchmarks/
+  benchmark_melodies.py
+  benchmark_results.json
 CHANGELOG.md
 CONTRIBUTING.md
 quality/

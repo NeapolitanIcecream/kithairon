@@ -1,0 +1,107 @@
+{
+  "cases": [
+    {
+      "candidate_count": 3,
+      "candidate_engines": [
+        "strict"
+      ],
+      "edit_count": 0,
+      "engine": "strict",
+      "input": "scale_c_major.musicxml",
+      "listening_notes": "Small diatonic smoke fixture; top strict candidates should remain stable.",
+      "name": "scale-strict",
+      "quality_status": "good",
+      "relaxed_candidate_count": 0,
+      "runtime_seconds": 0.0496,
+      "solver_status": null,
+      "solver_wall_time_seconds": null,
+      "strict_canon": true,
+      "top_candidate_engine": "strict",
+      "top_candidate_id": "strict_0156",
+      "top_score": 100.0
+    },
+    {
+      "candidate_count": 3,
+      "candidate_engines": [
+        "strict"
+      ],
+      "edit_count": 0,
+      "engine": "strict",
+      "input": "folk_like_period.musicxml",
+      "listening_notes": "Balanced phrase for checking whether ranking favors consonant delays.",
+      "name": "folk-strict",
+      "quality_status": "good",
+      "relaxed_candidate_count": 0,
+      "runtime_seconds": 0.1071,
+      "solver_status": null,
+      "solver_wall_time_seconds": null,
+      "strict_canon": true,
+      "top_candidate_engine": "strict",
+      "top_candidate_id": "strict_0156",
+      "top_score": 100.0
+    },
+    {
+      "candidate_count": 1,
+      "candidate_engines": [
+        "repair"
+      ],
+      "edit_count": 1,
+      "engine": "repair",
+      "input": "bad_for_canon.musicxml",
+      "listening_notes": "Negative fixture; repair should visibly improve the best strict base.",
+      "name": "bad-repair",
+      "quality_status": "good",
+      "relaxed_candidate_count": 1,
+      "runtime_seconds": 1.5766,
+      "solver_status": null,
+      "solver_wall_time_seconds": null,
+      "strict_canon": false,
+      "top_candidate_engine": "repair",
+      "top_candidate_id": "repair_0003_strict_0105",
+      "top_score": 98.5
+    },
+    {
+      "candidate_count": 1,
+      "candidate_engines": [
+        "solver"
+      ],
+      "edit_count": 2,
+      "engine": "solver",
+      "input": "bad_for_canon.musicxml",
+      "listening_notes": "Solver fixture; edit plan should stay short and objective status visible.",
+      "name": "bad-solver",
+      "quality_status": "acceptable",
+      "relaxed_candidate_count": 1,
+      "runtime_seconds": 0.3149,
+      "solver_status": "OPTIMAL",
+      "solver_wall_time_seconds": 0.0017180000000000001,
+      "strict_canon": false,
+      "top_candidate_engine": "solver",
+      "top_candidate_id": "solver_0004_strict_0063",
+      "top_score": 74.05
+    },
+    {
+      "candidate_count": 4,
+      "candidate_engines": [
+        "repair",
+        "strict"
+      ],
+      "edit_count": 0,
+      "engine": "auto",
+      "input": "bad_for_canon.musicxml",
+      "listening_notes": "Auto fallback fixture; at least one relaxed candidate should remain visible.",
+      "name": "bad-auto",
+      "quality_status": "good",
+      "relaxed_candidate_count": 1,
+      "runtime_seconds": 1.7121,
+      "solver_status": null,
+      "solver_wall_time_seconds": null,
+      "strict_canon": true,
+      "top_candidate_engine": "strict",
+      "top_candidate_id": "strict_0156",
+      "top_score": 100.0
+    }
+  ],
+  "generated_at": "2026-05-19T06:24:00.323880+00:00",
+  "schema_version": 1
+}

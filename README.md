@@ -202,9 +202,12 @@ CLI flags override config values for the same run:
 uv run canonize generate examples/melodies/scale_c_major.musicxml \
   --config kithairon.toml \
   --engine repair \
+  --score-profile renaissance-lite \
   --top-k 2 \
   --out tmp/repair-from-config
 ```
+
+The scoring profile defaults to `pop-lite`. Use `--score-profile permissive` for looser ranking or `--score-profile renaissance-lite` for stricter counterpoint-style penalties. The selected profile is recorded in `resolved_config.toml`, `results.json`, and the visualization payload.
 
 ## Errors
 
@@ -226,7 +229,9 @@ Run the full local gate:
 uv run ruff check .
 uv run ruff format --check .
 uv run pyright
-uv run pytest
+uv run coverage run -m pytest
+uv run coverage report
+uv run pytest benchmarks/test_performance_budgets.py -q
 bash scripts/build-docs.sh
 ```
 
@@ -257,5 +262,7 @@ bash scripts/build-docs.sh
 ```
 
 Deploy the documentation with Cloudflare Pages Git integration using `pip install uv && uv run --extra docs mkdocs build --strict` as the build command and `site` as the build output directory. See [Deployment](docs/deployment.md) for the full Pages settings.
+
+See [Package Distribution](docs/package-distribution.md) before publishing to a Python package index. The GitHub repository and release names can stay `kithairon`, but the PyPI distribution name is already occupied by an unrelated project.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request checks and [CHANGELOG.md](CHANGELOG.md) for release notes.
