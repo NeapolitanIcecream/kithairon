@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, cast
 
+from click import unstyle
 from typer.testing import CliRunner
 
 from kithairon import __version__
@@ -36,7 +37,7 @@ def test_generate_help_lists_score_profile_option() -> None:
     )
 
     assert result.exit_code == 0
-    assert "--score-profile" in result.stdout
+    assert "--score-profile" in unstyle(result.stdout)
 
 
 def test_config_resolve_help_lists_score_profile_option() -> None:
@@ -48,7 +49,7 @@ def test_config_resolve_help_lists_score_profile_option() -> None:
     )
 
     assert result.exit_code == 0
-    assert "--score-profile" in result.stdout
+    assert "--score-profile" in unstyle(result.stdout)
 
 
 def test_config_resolve_json_smoke() -> None:
