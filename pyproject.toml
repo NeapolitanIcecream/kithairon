@@ -14,6 +14,10 @@ dependencies = [
     "typer>=0.25.1",
 ]
 
+[project.urls]
+Documentation = "https://kithairon-docs.pages.dev"
+Repository = "https://github.com/NeapolitanIcecream/kithairon"
+
 [project.scripts]
 canonize = "kithairon.cli:main"
 canonize-web = "kithairon.api.app:main"

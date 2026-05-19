@@ -1,5 +1,6 @@
 site_name: Kithairon
 site_description: Generate playable and explainable canon variants from a monophonic melody.
+site_url: https://kithairon-docs.pages.dev/
 theme:
   name: material
 nav:

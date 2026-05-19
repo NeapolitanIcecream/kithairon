@@ -4,6 +4,8 @@ Kithairon is a small symbolic music compiler that turns a monophonic melody into
 
 Use it from the `canonize` CLI with MIDI or MusicXML input. Each generation run writes playable files, a machine-readable result file, the resolved config, and a Markdown report.
 
+Read the hosted documentation at <https://kithairon-docs.pages.dev>.
+
 ## 30-Second Demo
 
 Run Kithairon on a longer Bach-derived MusicXML fragment:
