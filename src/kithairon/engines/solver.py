@@ -9,30 +9,11 @@ from typing import Any
 
 from kithairon.analysis import AnalysisContext, analyze_candidate
 from kithairon.config import KithaironConfig, format_fraction
+from kithairon.engines.solver_objective import SolverPitchOption, build_pitch_options
 from kithairon.engines.strict import generate_strict_candidate_pool, transform_spec_to_dict
 from kithairon.errors import GenerationError
 from kithairon.ir import CanonCandidate, Melody, NoteEvent, RuleViolation, Voice
-from kithairon.rules.consonance import CONSONANT_SIMPLE_SEMITONES
 from kithairon.scoring import quality_status, rank_candidates, score_candidate
-
-FOLLOWER_RANGE = (36, 88)
-EDIT_WEIGHT = 100
-PITCH_DELTA_WEIGHT = 2
-DISSONANCE_WEIGHT = 12
-CADENCE_WEIGHT = 16
-CADENTIAL_CONSONANCES = frozenset({0, 3, 4, 7})
-
-
-@dataclass(frozen=True)
-class SolverPitchOption:
-    pitch: int
-    edit_cost: int
-    consonance_cost: int
-    cadence_cost: int
-
-    @property
-    def total_cost(self) -> int:
-        return self.edit_cost + self.consonance_cost + self.cadence_cost
 
 
 @dataclass(frozen=True)
@@ -217,48 +198,11 @@ def _pitch_options(
     cadence_leader_pitch: int | None,
 ) -> tuple[SolverPitchOption, ...]:
     assert event.pitch is not None
-    candidate_pitches = _candidate_pitches(event.pitch, requirements)
-    options = tuple(
-        _solver_pitch_option(
-            pitch=pitch,
-            base_pitch=event.pitch,
-            weak_leader_pitches=weak_leader_pitches,
-            cadence_leader_pitch=cadence_leader_pitch,
-        )
-        for pitch in candidate_pitches
-        if _meets_requirements(pitch, requirements)
-    )
-    return tuple(sorted(options, key=lambda option: (option.total_cost, option.pitch)))
-
-
-def _candidate_pitches(base_pitch: int, requirements: tuple[int, ...]) -> tuple[int, ...]:
-    lower, upper = FOLLOWER_RANGE
-    nearby = range(max(lower, base_pitch - 12), min(upper, base_pitch + 12) + 1)
-    if not requirements:
-        return tuple(
-            sorted(
-                {base_pitch, base_pitch - 12, base_pitch + 12}.intersection(range(lower, upper + 1))
-            )
-        )
-    return tuple(nearby)
-
-
-def _solver_pitch_option(
-    *,
-    pitch: int,
-    base_pitch: int,
-    weak_leader_pitches: tuple[int, ...],
-    cadence_leader_pitch: int | None,
-) -> SolverPitchOption:
-    edited = pitch != base_pitch
-    edit_cost = (EDIT_WEIGHT if edited else 0) + abs(pitch - base_pitch) * PITCH_DELTA_WEIGHT
-    consonance_cost = DISSONANCE_WEIGHT * _dissonance_count(pitch, weak_leader_pitches)
-    cadence_cost = _cadence_cost(pitch, cadence_leader_pitch)
-    return SolverPitchOption(
-        pitch=pitch,
-        edit_cost=edit_cost,
-        consonance_cost=consonance_cost,
-        cadence_cost=cadence_cost,
+    return build_pitch_options(
+        base_pitch=event.pitch,
+        requirements=requirements,
+        weak_leader_pitches=weak_leader_pitches,
+        cadence_leader_pitch=cadence_leader_pitch,
     )
 
 
@@ -418,27 +362,6 @@ def _cadence_context(context: AnalysisContext) -> dict[str, int]:
     if event_id is None or leader_pitch is None:
         return {}
     return {event_id: leader_pitch}
-
-
-def _meets_requirements(pitch: int, leader_pitches: tuple[int, ...]) -> bool:
-    return all(_is_consonant_with_leader(pitch, leader_pitch) for leader_pitch in leader_pitches)
-
-
-def _dissonance_count(pitch: int, leader_pitches: tuple[int, ...]) -> int:
-    return sum(
-        0 if _is_consonant_with_leader(pitch, leader_pitch) else 1
-        for leader_pitch in leader_pitches
-    )
-
-
-def _cadence_cost(pitch: int, leader_pitch: int | None) -> int:
-    if leader_pitch is None:
-        return 0
-    return 0 if abs(pitch - leader_pitch) % 12 in CADENTIAL_CONSONANCES else CADENCE_WEIGHT
-
-
-def _is_consonant_with_leader(pitch: int, leader_pitch: int) -> bool:
-    return abs(pitch - leader_pitch) % 12 in CONSONANT_SIMPLE_SEMITONES
 
 
 def _repairable_violations(candidate: CanonCandidate) -> tuple[RuleViolation, ...]:
