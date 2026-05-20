@@ -57,6 +57,79 @@ def test_run_upload_applies_score_profile_override(tmp_path: Path) -> None:
     assert metadata["score_profile"] == "permissive"
 
 
+def test_polish_endpoint_returns_lineaged_variants_for_real_run(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    assert run_response.status_code == 200, run_response.text
+    run_payload = cast(dict[str, Any], run_response.json())
+    run_id = cast(str, run_payload["run_id"])
+    candidates = cast(list[dict[str, Any]], run_payload["candidates"])
+    parent_candidate = candidates[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+    follower_bar = _first_pitched_bar(parent_candidate, role="follower")
+
+    polish_response = client.post(
+        f"/api/runs/{run_id}/candidates/{candidate_id}/polish",
+        json={
+            "bar_start": follower_bar,
+            "bar_end": follower_bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "max_variants": 2,
+            "objective_preset": "reduce_repetition",
+            "objective_overrides": {"repeated_note_penalty": 1.5},
+        },
+    )
+
+    assert polish_response.status_code == 200, polish_response.text
+    payload = cast(dict[str, Any], polish_response.json())
+    summary = cast(dict[str, Any], payload["summary"])
+    variants = cast(list[dict[str, Any]], payload["candidates"])
+    assert summary["parent_candidate_id"] == candidate_id
+    assert summary["edited_bars"] == [follower_bar]
+    assert 0 < summary["returned_variants"] <= 2
+    assert len(variants) == summary["returned_variants"]
+    metadata = cast(dict[str, Any], variants[0]["metadata"])
+    assert metadata["parent_candidate_id"] == candidate_id
+    assert metadata["edited_bars"] == [follower_bar]
+    assert metadata["rewrite_voice"] == "follower"
+
+
+def test_polish_endpoint_reports_missing_candidate_as_diagnostic(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    run_id = cast(str, cast(dict[str, Any], run_response.json())["run_id"])
+
+    response = client.post(
+        f"/api/runs/{run_id}/candidates/missing/polish",
+        json={"bar_start": 1, "bar_end": 1},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "polish_candidate_not_found"
+
+
+def _first_pitched_bar(candidate: dict[str, Any], *, role: str) -> int:
+    for note in cast(list[dict[str, Any]], candidate["notes"]):
+        if note["role"] == role and note["pitch"] is not None:
+            return cast(int, note["bar"])
+    raise AssertionError(f"candidate has no pitched {role} note")
+
+
 def test_run_upload_rejects_unsupported_suffix(tmp_path: Path) -> None:
     client = TestClient(create_app(output_root=tmp_path))
 

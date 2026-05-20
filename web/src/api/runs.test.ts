@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { uploadRun } from './runs'
+import { polishCandidate, uploadRun } from './runs'
 
 const runSummaryPayload = {
   run_id: 'run-1',
@@ -80,5 +80,82 @@ describe('uploadRun', () => {
     expect(form.get('chord_policy')).toBe('top_note')
     expect(form.get('part_policy')).toBe('explicit_index')
     expect(form.get('part_index')).toBe('2')
+  })
+})
+
+describe('polishCandidate', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('posts a polish request and validates returned variants', async () => {
+    const polishPayload = {
+      request: {
+        bar_start: 3,
+        bar_end: 4,
+        lock_voice: 'leader',
+        rewrite_voice: 'follower',
+        max_variants: 2,
+        objective_preset: 'reduce_repetition',
+        objective_overrides: { repeated_note_penalty: 1.5 },
+      },
+      summary: {
+        parent_candidate_id: 'strict_0001',
+        edited_bars: [3, 4],
+        lock_voice: 'leader',
+        rewrite_voice: 'follower',
+        objective_preset: 'reduce_repetition',
+        requested_variants: 2,
+        returned_variants: 1,
+        changed_notes: 1,
+      },
+      candidates: [
+        {
+          ...runSummaryPayload.candidates[0],
+          candidate_id: 'strict_0001_polish_001',
+          metadata: {
+            parent_candidate_id: 'strict_0001',
+            edited_bars: [3, 4],
+            rewrite_voice: 'follower',
+          },
+        },
+      ],
+    }
+    const fetchMock = vi.fn(async (path: string, init?: RequestInit) => {
+      void path
+      void init
+      return new Response(JSON.stringify(polishPayload), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await polishCandidate('run-1', 'strict_0001', {
+      barStart: 3,
+      barEnd: 4,
+      lockVoice: 'leader',
+      rewriteVoice: 'follower',
+      maxVariants: 2,
+      objectivePreset: 'reduce_repetition',
+      objectiveOverrides: { repeated_note_penalty: 1.5 },
+    })
+
+    expect(result.summary.returned_variants).toBe(1)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const calls = fetchMock.mock.calls as Array<[string, RequestInit]>
+    expect(calls[0][0]).toBe('/api/runs/run-1/candidates/strict_0001/polish')
+    const init = calls[0][1]
+    expect(init.method).toBe('POST')
+    expect(init.headers).toEqual({ 'content-type': 'application/json' })
+    expect(JSON.parse(init.body as string)).toEqual({
+      bar_start: 3,
+      bar_end: 4,
+      lock_voice: 'leader',
+      rewrite_voice: 'follower',
+      max_variants: 2,
+      objective_preset: 'reduce_repetition',
+      objective_overrides: { repeated_note_penalty: 1.5 },
+    })
   })
 })

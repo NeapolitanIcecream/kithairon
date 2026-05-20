@@ -16,6 +16,7 @@ import { CandidateTable } from './CandidateTable'
 import { ExportMenu } from './ExportMenu'
 import { PianoRollView } from './PianoRollView'
 import { PlaybackControls } from './PlaybackControls'
+import { PhrasePolishPanel } from './PhrasePolishPanel'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { ScoreView } from './ScoreView'
 import { StrictRelaxedDiff } from './StrictRelaxedDiff'
@@ -62,6 +63,33 @@ export function KithaironAppShell() {
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
     setSelectedCandidateId(nextRunSummary.candidates[0]?.candidate_id ?? null)
+    setSelectedEventId(null)
+    setSelectedViolationId(null)
+    setSelectedRepairActionId(null)
+    setViolationCategoryFilter('all')
+    setActivePlaybackEventIds([])
+  }
+
+  function handlePolishVariants(variants: CandidateViz[]) {
+    if (variants.length === 0) {
+      return
+    }
+    setRunSummary((current) => {
+      if (current === null) {
+        return current
+      }
+      const variantIds = new Set(variants.map((variant) => variant.candidate_id))
+      return {
+        ...current,
+        candidates: [
+          ...current.candidates.filter(
+            (candidate) => !variantIds.has(candidate.candidate_id),
+          ),
+          ...variants,
+        ],
+      }
+    })
+    setSelectedCandidateId(variants[0].candidate_id)
     setSelectedEventId(null)
     setSelectedViolationId(null)
     setSelectedRepairActionId(null)
@@ -138,6 +166,19 @@ export function KithaironAppShell() {
               candidates={candidates}
               selectedCandidateId={selectedCandidateId}
               onSelectCandidate={handleCandidateSelect}
+            />
+          </Paper>
+          <Paper className="candidate-surface" p="md">
+            <Text className="surface-title" mb="sm">
+              Phrase Polish
+            </Text>
+            <PhrasePolishPanel
+              runSummary={runSummary}
+              candidates={candidates}
+              selectedCandidateId={selectedCandidateId}
+              selectedCandidate={selectedCandidate}
+              onSelectCandidate={handleCandidateSelect}
+              onVariantsReceived={handlePolishVariants}
             />
           </Paper>
         </Stack>

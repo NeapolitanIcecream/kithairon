@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** Health */
-        get: operations["health_api_health_get"];
+        get: operations["_health_api_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/runs/{run_id}/candidates/{candidate_id}/polish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Polish Candidate */
+        post: operations["polish_candidate_api_runs__run_id__candidates__candidate_id__polish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs/{run_id}/candidates/{candidate_id}/render": {
         parameters: {
             query?: never;
@@ -178,27 +195,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** Body_create_run_api_runs_post */
-        Body_create_run_api_runs_post: {
-            /** Chord Policy */
-            chord_policy?: string | null;
-            /** Config */
-            config?: string | null;
-            /** Engine */
-            engine?: string | null;
-            /** File */
-            file: string;
-            /** Part Index */
-            part_index?: number | null;
-            /** Part Policy */
-            part_policy?: string | null;
-            /** Top K */
-            top_k?: number | null;
-        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** @enum {string} */
+        LockVoice: "leader" | "follower" | "none";
+        /** @enum {string} */
+        ObjectivePreset: "reduce_repetition" | "smooth_bass" | "strengthen_cadence" | "general_polish";
+        /** PolishObjectiveWeights */
+        PolishObjectiveWeights: {
+            /** Bass Smoothness Penalty */
+            bass_smoothness_penalty?: number | null;
+            /** Cadence Motion Reward */
+            cadence_motion_reward?: number | null;
+            /** Leap Penalty */
+            leap_penalty?: number | null;
+            /** Repeated Note Penalty */
+            repeated_note_penalty?: number | null;
+        };
+        /** PolishRequest */
+        PolishRequest: {
+            /** Bar End */
+            bar_end: number;
+            /** Bar Start */
+            bar_start: number;
+            /** @default none */
+            lock_voice: components["schemas"]["LockVoice"];
+            /**
+             * Max Variants
+             * @default 6
+             */
+            max_variants: number;
+            objective_overrides?: components["schemas"]["PolishObjectiveWeights"];
+            /** @default general_polish */
+            objective_preset: components["schemas"]["ObjectivePreset"];
+            /** @default auto */
+            rewrite_voice: components["schemas"]["RewriteVoice"];
         };
         /** @enum {string} */
         RenderFormat: "pdf" | "svg" | "png";
@@ -207,6 +241,8 @@ export interface components {
             /** Formats */
             formats: components["schemas"]["RenderFormat"][];
         };
+        /** @enum {string} */
+        RewriteVoice: "leader" | "follower" | "auto";
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -229,7 +265,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_api_health_get: {
+    _health_api_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -258,11 +294,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_create_run_api_runs_post"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -273,15 +305,6 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -469,6 +492,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    polish_candidate_api_runs__run_id__candidates__candidate_id__polish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

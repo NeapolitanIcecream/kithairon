@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { RunSummarySchema } from './schemas'
+import { PolishResultSchema, RunSummarySchema } from './schemas'
 
 describe('RunSummarySchema', () => {
   it('validates the visualization payload contract', () => {
@@ -40,5 +40,65 @@ describe('RunSummarySchema', () => {
     }
 
     expect(RunSummarySchema.parse(payload).run_id).toBe('run-1')
+  })
+})
+
+describe('PolishResultSchema', () => {
+  it('validates lineaged polish variants', () => {
+    const payload = {
+      request: {
+        bar_start: 1,
+        bar_end: 2,
+        lock_voice: 'leader',
+        rewrite_voice: 'follower',
+        max_variants: 2,
+        objective_preset: 'reduce_repetition',
+        objective_overrides: { repeated_note_penalty: 1.5 },
+      },
+      summary: {
+        parent_candidate_id: 'strict_0001',
+        edited_bars: [1, 2],
+        lock_voice: 'leader',
+        rewrite_voice: 'follower',
+        objective_preset: 'reduce_repetition',
+        requested_variants: 2,
+        returned_variants: 1,
+        changed_notes: 1,
+      },
+      candidates: [
+        {
+          candidate_id: 'strict_0001_polish_001',
+          rank: 1,
+          title: 'Candidate 1',
+          transform: {
+            engine: 'strict',
+            strict_canon: false,
+            label: 'relaxed canon',
+            delay_q: { text: '1', value: 1 },
+            interval: 7,
+            transform_mode: 'transposition',
+            inversion_axis: null,
+            rhythm_scale: '1',
+          },
+          score: {
+            total: 88,
+            by_category: {},
+            by_rule: {},
+            bonuses: {},
+          },
+          notes: [],
+          violations: [],
+          repair_actions: [],
+          artifacts: {},
+          metadata: {
+            parent_candidate_id: 'strict_0001',
+            edited_bars: [1, 2],
+            rewrite_voice: 'follower',
+          },
+        },
+      ],
+    }
+
+    expect(PolishResultSchema.parse(payload).summary.returned_variants).toBe(1)
   })
 })

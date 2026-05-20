@@ -21,6 +21,7 @@ from kithairon.config import (
 )
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import run_generation
+from kithairon.polish import PolishRequest, polish_run_candidate
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
 )
@@ -226,6 +227,11 @@ def _register_routes(app: Any, settings: ApiSettings) -> None:
         _get_run_visualization_endpoint(settings),
         methods=["GET"],
     )
+    app.add_api_route(
+        "/api/runs/{run_id}/candidates/{candidate_id}/polish",
+        _polish_candidate_endpoint(settings),
+        methods=["POST"],
+    )
     register_artifact_routes(app, settings)
 
 
@@ -258,6 +264,27 @@ def _get_run_visualization_endpoint(settings: ApiSettings) -> Any:
         return _run_visualization(settings, run_id)
 
     return get_run_visualization
+
+
+def _polish_candidate_endpoint(settings: ApiSettings) -> Any:
+    def polish_candidate(
+        run_id: str,
+        candidate_id: str,
+        request: PolishRequest,
+    ) -> dict[str, object]:
+        try:
+            result = polish_run_candidate(run_dir(settings, run_id), candidate_id, request)
+        except KithaironError as exc:
+            status_code = 404 if exc.diagnostic.code == "polish_candidate_not_found" else 400
+            raise ApiError(
+                exc.diagnostic.message,
+                code=exc.diagnostic.code,
+                status_code=status_code,
+                details=dict(exc.diagnostic.details),
+            ) from exc
+        return result.model_dump(mode="json")
+
+    return polish_candidate
 
 
 def _mount_frontend(app: Any, settings: ApiSettings) -> None:

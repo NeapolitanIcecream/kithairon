@@ -1,5 +1,14 @@
 import { apiFetch, type ApiClientOptions } from './client'
-import { RunSummarySchema, type RunSummary } from './schemas'
+import {
+  PolishResultSchema,
+  RunSummarySchema,
+  type LockVoice,
+  type ObjectivePreset,
+  type PolishObjectiveWeights,
+  type PolishResult,
+  type RewriteVoice,
+  type RunSummary,
+} from './schemas'
 
 export type GenerationEngine = 'auto' | 'strict' | 'repair' | 'solver'
 export type ScoreProfile = 'permissive' | 'pop-lite' | 'renaissance-lite'
@@ -15,6 +24,16 @@ export type RunUploadOptions = {
   partPolicy?: PartPolicy
   partIndex?: number
   config?: Record<string, unknown>
+}
+
+export type PolishCandidateOptions = {
+  barStart: number
+  barEnd: number
+  lockVoice?: LockVoice
+  rewriteVoice?: RewriteVoice
+  maxVariants?: number
+  objectivePreset?: ObjectivePreset
+  objectiveOverrides?: PolishObjectiveWeights
 }
 
 export async function uploadRun(
@@ -43,6 +62,32 @@ export async function uploadRun(
     clientOptions,
   )
   return RunSummarySchema.parse(payload)
+}
+
+export async function polishCandidate(
+  runId: string,
+  candidateId: string,
+  options: PolishCandidateOptions,
+  clientOptions?: ApiClientOptions,
+): Promise<PolishResult> {
+  const payload = await apiFetch<unknown>(
+    `/api/runs/${encodeURIComponent(runId)}/candidates/${encodeURIComponent(candidateId)}/polish`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        bar_start: options.barStart,
+        bar_end: options.barEnd,
+        lock_voice: options.lockVoice ?? 'none',
+        rewrite_voice: options.rewriteVoice ?? 'auto',
+        max_variants: options.maxVariants ?? 6,
+        objective_preset: options.objectivePreset ?? 'general_polish',
+        objective_overrides: options.objectiveOverrides ?? {},
+      }),
+    },
+    clientOptions,
+  )
+  return PolishResultSchema.parse(payload)
 }
 
 function appendOptional(form: FormData, key: string, value: string | number | undefined) {

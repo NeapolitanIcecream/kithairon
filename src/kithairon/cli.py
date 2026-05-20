@@ -8,6 +8,7 @@ from typing import Annotated, Any, Literal, NoReturn
 
 import typer
 from click import UsageError, get_current_context
+from pydantic import ValidationError
 from rich.console import Console
 
 from kithairon import __version__
@@ -16,10 +17,12 @@ from kithairon.config import (
     ConfigOverrideOptions,
     build_config_overrides,
     load_config,
+    normalize_cli_token,
     write_resolved_config,
 )
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.pipeline import GenerationRun, run_generation
+from kithairon.polish import PolishRequest, polish_run_candidate
 
 console = Console()
 debug_traceback = False
@@ -111,6 +114,26 @@ OVERWRITE_OUTPUT_OPTION: object = _option(
     "--overwrite",
     help="Replace an existing output directory instead of creating a suffixed directory.",
 )
+CANDIDATE_ID_OPTION: object = _option(
+    "--candidate",
+    help="Candidate id to polish inside the run visualization.",
+)
+BARS_OPTION: object = _option(
+    "--bars",
+    help="Inclusive bar range to rewrite, for example 7-8 or 7.",
+)
+LOCK_VOICE_OPTION: object = _option(
+    "--lock-voice",
+    help="Voice to keep unchanged: leader, follower, or none.",
+)
+REWRITE_VOICE_OPTION: object = _option(
+    "--rewrite-voice",
+    help="Voice to rewrite: leader, follower, or auto.",
+)
+OBJECTIVE_PRESET_OPTION: object = _option(
+    "--preset",
+    help="Polish objective preset.",
+)
 
 
 @app.callback()
@@ -190,6 +213,40 @@ def generate(
         ),
     )
     console.print_json(data=payload)
+
+
+@app.command()
+def polish(
+    run_dir: Annotated[Path, _argument(file_okay=False, help="Generated run directory.")],
+    candidate_id: Annotated[str, CANDIDATE_ID_OPTION],
+    bars: Annotated[str, BARS_OPTION],
+    lock_voice: Annotated[str, LOCK_VOICE_OPTION] = "none",
+    rewrite_voice: Annotated[str, REWRITE_VOICE_OPTION] = "auto",
+    preset: Annotated[str, OBJECTIVE_PRESET_OPTION] = "general-polish",
+    top_k: Annotated[int, TOP_K_OPTION] = 6,
+) -> None:
+    """Generate selected-bar local rewrite variants for an existing run candidate."""
+    try:
+        bar_start, bar_end = _parse_bar_range(bars)
+        request = PolishRequest.model_validate(
+            {
+                "bar_start": bar_start,
+                "bar_end": bar_end,
+                "lock_voice": normalize_cli_token(lock_voice),
+                "rewrite_voice": normalize_cli_token(rewrite_voice),
+                "max_variants": top_k,
+                "objective_preset": normalize_cli_token(preset),
+            }
+        )
+        result = polish_run_candidate(run_dir, candidate_id, request)
+    except KithaironError as exc:
+        _exit_project_error(exc)
+    except ValidationError as exc:
+        _exit_validation_error(exc, code="polish_request_invalid")
+    except Exception as exc:
+        _exit_unexpected_error(exc)
+
+    console.print_json(data=result.model_dump(mode="json"))
 
 
 def _run_generate_command(
@@ -272,6 +329,32 @@ def _parse_extra_options(extra_args: list[str], *, allow_overwrite: bool) -> Ext
     )
 
 
+def _parse_bar_range(value: str) -> tuple[int, int]:
+    start_text, separator, end_text = value.strip().partition("-")
+    if not start_text or (separator and not end_text):
+        raise KithaironError(
+            "Bar range must be a positive integer or inclusive range like 7-8.",
+            code="polish_invalid_bar_range",
+            details={"bars": value},
+        )
+    try:
+        start = int(start_text)
+        end = int(end_text) if separator else start
+    except ValueError as exc:
+        raise KithaironError(
+            "Bar range must be a positive integer or inclusive range like 7-8.",
+            code="polish_invalid_bar_range",
+            details={"bars": value},
+        ) from exc
+    if start < 1 or end < start:
+        raise KithaironError(
+            "Bar range must start at bar 1 or later and end after the start.",
+            code="polish_invalid_bar_range",
+            details={"bars": value, "bar_start": start, "bar_end": end},
+        )
+    return start, end
+
+
 def _generation_success_payload(generation: GenerationRun) -> dict[str, object]:
     return {
         "status": "ok",
@@ -340,6 +423,17 @@ def _exit_unexpected_error(exc: Exception) -> NoReturn:
             code="internal_error",
             message="An unexpected internal error occurred. Re-run with --debug for a traceback.",
             details={"error_type": type(exc).__name__, "error": str(exc)},
+        ).to_dict()
+    )
+    raise typer.Exit(code=1) from exc
+
+
+def _exit_validation_error(exc: ValidationError, *, code: str) -> NoReturn:
+    console.print_json(
+        data=Diagnostic(
+            code=code,
+            message="Command options are invalid.",
+            details={"errors": exc.errors(include_url=False)},
         ).to_dict()
     )
     raise typer.Exit(code=1) from exc

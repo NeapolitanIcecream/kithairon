@@ -116,6 +116,50 @@ export const RunSummarySchema = z.object({
   candidates: z.array(CandidateVizSchema),
 })
 
+export const LockVoiceSchema = z.enum(['leader', 'follower', 'none'])
+export const RewriteVoiceSchema = z.enum(['leader', 'follower', 'auto'])
+export const ResolvedRewriteVoiceSchema = z.enum(['leader', 'follower'])
+export const ObjectivePresetSchema = z.enum([
+  'reduce_repetition',
+  'smooth_bass',
+  'strengthen_cadence',
+  'general_polish',
+])
+
+export const PolishObjectiveWeightsSchema = z.object({
+  repeated_note_penalty: z.number().nullable().optional(),
+  leap_penalty: z.number().nullable().optional(),
+  bass_smoothness_penalty: z.number().nullable().optional(),
+  cadence_motion_reward: z.number().nullable().optional(),
+})
+
+export const PolishRequestSchema = z.object({
+  bar_start: z.number().int(),
+  bar_end: z.number().int(),
+  lock_voice: LockVoiceSchema,
+  rewrite_voice: RewriteVoiceSchema,
+  max_variants: z.number().int(),
+  objective_preset: ObjectivePresetSchema,
+  objective_overrides: PolishObjectiveWeightsSchema,
+})
+
+export const PolishSummarySchema = z.object({
+  parent_candidate_id: z.string(),
+  edited_bars: z.array(z.number().int()),
+  lock_voice: LockVoiceSchema,
+  rewrite_voice: ResolvedRewriteVoiceSchema,
+  objective_preset: ObjectivePresetSchema,
+  requested_variants: z.number().int(),
+  returned_variants: z.number().int(),
+  changed_notes: z.number().int(),
+})
+
+export const PolishResultSchema = z.object({
+  request: PolishRequestSchema,
+  summary: PolishSummarySchema,
+  candidates: z.array(CandidateVizSchema),
+})
+
 export type Rational = z.infer<typeof RationalSchema>
 export type NoteViz = z.infer<typeof NoteVizSchema>
 export type ViolationViz = z.infer<typeof ViolationVizSchema>
@@ -124,3 +168,10 @@ export type RepairAction = z.infer<typeof RepairActionSchema>
 export type TransformViz = z.infer<typeof TransformVizSchema>
 export type CandidateViz = z.infer<typeof CandidateVizSchema>
 export type RunSummary = z.infer<typeof RunSummarySchema>
+export type LockVoice = z.infer<typeof LockVoiceSchema>
+export type RewriteVoice = z.infer<typeof RewriteVoiceSchema>
+export type ObjectivePreset = z.infer<typeof ObjectivePresetSchema>
+export type PolishObjectiveWeights = z.infer<typeof PolishObjectiveWeightsSchema>
+export type PolishRequest = z.infer<typeof PolishRequestSchema>
+export type PolishSummary = z.infer<typeof PolishSummarySchema>
+export type PolishResult = z.infer<typeof PolishResultSchema>

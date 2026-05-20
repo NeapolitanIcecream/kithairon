@@ -1,86 +1,6 @@
 {
   "components": {
     "schemas": {
-      "Body_create_run_api_runs_post": {
-        "properties": {
-          "chord_policy": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Chord Policy"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config"
-          },
-          "engine": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Engine"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          },
-          "part_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Part Index"
-          },
-          "part_policy": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Part Policy"
-          },
-          "top_k": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Top K"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_create_run_api_runs_post",
-        "type": "object"
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -92,6 +12,121 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LockVoice": {
+        "enum": [
+          "leader",
+          "follower",
+          "none"
+        ],
+        "type": "string"
+      },
+      "ObjectivePreset": {
+        "enum": [
+          "reduce_repetition",
+          "smooth_bass",
+          "strengthen_cadence",
+          "general_polish"
+        ],
+        "type": "string"
+      },
+      "PolishObjectiveWeights": {
+        "additionalProperties": false,
+        "properties": {
+          "bass_smoothness_penalty": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bass Smoothness Penalty"
+          },
+          "cadence_motion_reward": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadence Motion Reward"
+          },
+          "leap_penalty": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leap Penalty"
+          },
+          "repeated_note_penalty": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeated Note Penalty"
+          }
+        },
+        "title": "PolishObjectiveWeights",
+        "type": "object"
+      },
+      "PolishRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "bar_end": {
+            "minimum": 1.0,
+            "title": "Bar End",
+            "type": "integer"
+          },
+          "bar_start": {
+            "minimum": 1.0,
+            "title": "Bar Start",
+            "type": "integer"
+          },
+          "lock_voice": {
+            "$ref": "#/components/schemas/LockVoice",
+            "default": "none"
+          },
+          "max_variants": {
+            "default": 6,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Max Variants",
+            "type": "integer"
+          },
+          "objective_overrides": {
+            "$ref": "#/components/schemas/PolishObjectiveWeights"
+          },
+          "objective_preset": {
+            "$ref": "#/components/schemas/ObjectivePreset",
+            "default": "general_polish"
+          },
+          "rewrite_voice": {
+            "$ref": "#/components/schemas/RewriteVoice",
+            "default": "auto"
+          }
+        },
+        "required": [
+          "bar_start",
+          "bar_end"
+        ],
+        "title": "PolishRequest",
         "type": "object"
       },
       "RenderFormat": {
@@ -118,6 +153,14 @@
         ],
         "title": "RenderRequest",
         "type": "object"
+      },
+      "RewriteVoice": {
+        "enum": [
+          "leader",
+          "follower",
+          "auto"
+        ],
+        "type": "string"
       },
       "ValidationError": {
         "properties": {
@@ -169,7 +212,7 @@
   "paths": {
     "/api/health": {
       "get": {
-        "operationId": "health_api_health_get",
+        "operationId": "_health_api_health_get",
         "responses": {
           "200": {
             "content": {
@@ -178,7 +221,7 @@
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "title": "Response Health Api Health Get",
+                  "title": "Response  Health Api Health Get",
                   "type": "object"
                 }
               }
@@ -186,22 +229,12 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Health"
+        "summary": " Health"
       }
     },
     "/api/runs": {
       "post": {
         "operationId": "create_run_api_runs_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_create_run_api_runs_post"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "content": {
@@ -214,16 +247,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Create Run"
@@ -297,7 +320,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Run Artifact Api Runs  Run Id  Artifact  Kind  Get"
+                }
               }
             },
             "description": "Successful Response"
@@ -402,7 +427,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Candidate Artifact Api Runs  Run Id  Candidates  Candidate Id  Artifact  Kind  Get"
+                }
               }
             },
             "description": "Successful Response"
@@ -448,7 +475,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Candidate Midi Api Runs  Run Id  Candidates  Candidate Id  Midi Get"
+                }
               }
             },
             "description": "Successful Response"
@@ -494,7 +523,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Candidate Musicxml Api Runs  Run Id  Candidates  Candidate Id  Musicxml Get"
+                }
               }
             },
             "description": "Successful Response"
@@ -511,6 +542,66 @@
           }
         },
         "summary": "Get Candidate Musicxml"
+      }
+    },
+    "/api/runs/{run_id}/candidates/{candidate_id}/polish": {
+      "post": {
+        "operationId": "polish_candidate_api_runs__run_id__candidates__candidate_id__polish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Polish Candidate Api Runs  Run Id  Candidates  Candidate Id  Polish Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Polish Candidate"
       }
     },
     "/api/runs/{run_id}/candidates/{candidate_id}/render": {

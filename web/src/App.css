@@ -234,6 +234,10 @@
   font-size: 13px;
 }
 
+.polish-result-table {
+  font-size: 13px;
+}
+
 .breakdown-table tr[data-selected='true'] {
   background: #eef7f9;
 }
