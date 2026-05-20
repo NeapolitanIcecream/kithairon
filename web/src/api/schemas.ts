@@ -64,6 +64,23 @@ export const ScoreBreakdownSchema = z.object({
   bonuses: z.record(z.string(), z.number()),
 })
 
+export const MusicalityMetricSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  raw_value: z.number(),
+  normalized_value: z.number(),
+  weight: z.number(),
+  higher_is_better: z.boolean(),
+})
+
+export const MusicalityBreakdownSchema = z.object({
+  total: z.number(),
+  metrics: z.array(MusicalityMetricSchema),
+  raw_values: z.record(z.string(), z.number()),
+  normalized_values: z.record(z.string(), z.number()),
+  weights: z.record(z.string(), z.number()),
+})
+
 export const RepairActionSchema = z.object({
   action_id: z.string(),
   kind: z.enum([
@@ -100,6 +117,7 @@ export const CandidateVizSchema = z.object({
   title: z.string(),
   transform: TransformVizSchema,
   score: ScoreBreakdownSchema,
+  musicality: MusicalityBreakdownSchema.nullable().optional(),
   notes: z.array(NoteVizSchema),
   violations: z.array(ViolationVizSchema),
   repair_actions: z.array(RepairActionSchema),
@@ -164,6 +182,8 @@ export type Rational = z.infer<typeof RationalSchema>
 export type NoteViz = z.infer<typeof NoteVizSchema>
 export type ViolationViz = z.infer<typeof ViolationVizSchema>
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>
+export type MusicalityMetric = z.infer<typeof MusicalityMetricSchema>
+export type MusicalityBreakdown = z.infer<typeof MusicalityBreakdownSchema>
 export type RepairAction = z.infer<typeof RepairActionSchema>
 export type TransformViz = z.infer<typeof TransformVizSchema>
 export type CandidateViz = z.infer<typeof CandidateVizSchema>

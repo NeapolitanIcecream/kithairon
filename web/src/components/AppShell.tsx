@@ -14,6 +14,7 @@ import {
 import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
 import { CandidateTable } from './CandidateTable'
 import { ExportMenu } from './ExportMenu'
+import { MusicalityBreakdown } from './MusicalityBreakdown'
 import { PianoRollView } from './PianoRollView'
 import { PlaybackControls } from './PlaybackControls'
 import { PhrasePolishPanel } from './PhrasePolishPanel'
@@ -245,6 +246,9 @@ export function KithaironAppShell() {
                   activeCategory={violationCategoryFilter}
                   onCategoryFilterChange={setViolationCategoryFilter}
                 />
+                <Box mt="md">
+                  <MusicalityBreakdown musicality={selectedCandidate.musicality} />
+                </Box>
               </Box>
             ) : null}
             <Box mt="md">
@@ -305,6 +309,7 @@ function CandidateSummary({ candidate, runSummary }: CandidateSummaryProps) {
       </Title>
       <Group gap="xl">
         <Metric label="Score" value={candidate.score.total.toFixed(1)} />
+        <Metric label="Music" value={candidate.musicality?.total.toFixed(1) ?? '-'} />
         <Metric label="Delay" value={candidate.transform.delay_q?.text ?? '-'} />
         <Metric label="Interval" value={String(candidate.transform.interval ?? '-')} />
         <Metric label="Violations" value={String(candidate.violations.length)} />

@@ -7,6 +7,8 @@ from pydantic import ValidationError
 
 from kithairon.visualization.models import (
     CandidateVizDTO,
+    MusicalityBreakdownDTO,
+    MusicalityMetricDTO,
     NoteVizDTO,
     RunSummaryDTO,
     ScoreBreakdownDTO,
@@ -105,3 +107,27 @@ def test_candidate_and_run_artifacts_are_separate_contracts() -> None:
 
     assert set(run.artifacts) == {"report", "results"}
     assert run.candidates[0].candidate_id == "strict_0001"
+
+
+def test_musicality_breakdown_serializes_raw_normalized_and_weighted_metrics() -> None:
+    breakdown = MusicalityBreakdownDTO(
+        total=82.5,
+        metrics=[
+            MusicalityMetricDTO(
+                key="repeated_note_density",
+                label="Repeated-note density",
+                raw_value=0.25,
+                normalized_value=0.75,
+                weight=0.2,
+                higher_is_better=False,
+            )
+        ],
+        raw_values={"repeated_note_density": 0.25},
+        normalized_values={"repeated_note_density": 0.75},
+        weights={"repeated_note_density": 0.2},
+    )
+
+    payload = breakdown.model_dump(mode="json")
+
+    assert payload["total"] == 82.5
+    assert payload["metrics"][0]["key"] == "repeated_note_density"

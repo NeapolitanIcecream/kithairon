@@ -89,6 +89,23 @@ class ScoreBreakdownDTO(VisualizationModel):
     bonuses: dict[str, float] = Field(default_factory=dict)
 
 
+class MusicalityMetricDTO(VisualizationModel):
+    key: str
+    label: str
+    raw_value: float
+    normalized_value: float
+    weight: float
+    higher_is_better: bool
+
+
+class MusicalityBreakdownDTO(VisualizationModel):
+    total: float
+    metrics: list[MusicalityMetricDTO]
+    raw_values: dict[str, float] = Field(default_factory=dict)
+    normalized_values: dict[str, float] = Field(default_factory=dict)
+    weights: dict[str, float] = Field(default_factory=dict)
+
+
 class RepairActionDTO(VisualizationModel):
     action_id: str
     kind: RepairActionKindDTO = "unknown"
@@ -121,6 +138,7 @@ class CandidateVizDTO(VisualizationModel):
     title: str
     transform: TransformVizDTO
     score: ScoreBreakdownDTO
+    musicality: MusicalityBreakdownDTO | None = None
     notes: list[NoteVizDTO]
     violations: list[ViolationVizDTO]
     repair_actions: list[RepairActionDTO] = Field(default_factory=_empty_repair_actions)

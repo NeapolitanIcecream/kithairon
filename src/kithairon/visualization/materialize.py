@@ -8,8 +8,11 @@ from typing import cast
 
 from kithairon.analysis.timeline import parse_time_signature
 from kithairon.ir import CanonCandidate, NoteEvent, RuleViolation, Voice
+from kithairon.scoring.musicality import MusicalityBreakdown, compute_musicality
 from kithairon.visualization.models import (
     CandidateVizDTO,
+    MusicalityBreakdownDTO,
+    MusicalityMetricDTO,
     NoteVizDTO,
     RationalDTO,
     RepairActionDTO,
@@ -57,6 +60,7 @@ def materialize_candidate(
         title=_candidate_title(candidate),
         transform=_transform_viz(candidate),
         score=_score_breakdown(candidate),
+        musicality=_musicality_breakdown(compute_musicality(candidate)),
         notes=notes,
         violations=[
             _violation_viz(candidate, violation, index)
@@ -227,6 +231,26 @@ def _score_breakdown(candidate: CanonCandidate) -> ScoreBreakdownDTO:
         by_category=by_category,
         by_rule=by_rule,
         bonuses=_float_mapping(raw_breakdown.get("bonuses")),
+    )
+
+
+def _musicality_breakdown(breakdown: MusicalityBreakdown) -> MusicalityBreakdownDTO:
+    return MusicalityBreakdownDTO(
+        total=breakdown.total,
+        metrics=[
+            MusicalityMetricDTO(
+                key=metric.key,
+                label=metric.label,
+                raw_value=metric.raw_value,
+                normalized_value=metric.normalized_value,
+                weight=metric.weight,
+                higher_is_better=metric.higher_is_better,
+            )
+            for metric in breakdown.metrics
+        ],
+        raw_values=dict(breakdown.raw_values),
+        normalized_values=dict(breakdown.normalized_values),
+        weights=dict(breakdown.weights),
     )
 
 

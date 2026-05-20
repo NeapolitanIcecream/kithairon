@@ -11,7 +11,7 @@ from kithairon.config import QualityConfig
 from kithairon.ir import CanonCandidate, Voice, VoiceRole
 from kithairon.polish.models import PolishRequest
 from kithairon.polish.objective import evaluate_objective
-from kithairon.scoring import score_candidate
+from kithairon.scoring import compute_musicality, score_candidate
 
 
 def search_polish_variants(
@@ -47,7 +47,8 @@ def search_polish_variants(
         seen_pitch_sequences.add(pitch_sequence)
         evaluated = score_candidate(variant, profile_name=score_profile, quality=quality)
         objective = evaluate_objective(evaluated, request, rewrite_role=rewrite_role)
-        combined_score = evaluated.score + objective.total
+        musicality = compute_musicality(evaluated)
+        ranking_score = musicality.total + objective.total
         hard_violations = sum(
             1 for violation in evaluated.violations if violation.severity == "hard"
         )
@@ -66,11 +67,12 @@ def search_polish_variants(
                             "score": objective.total,
                             "components": dict(objective.components),
                             "weights": dict(objective.weights),
-                            "combined_score": round(combined_score, 4),
+                            "musicality_total": musicality.total,
+                            "ranking_score": round(ranking_score, 4),
                         },
                     },
                 ),
-                combined_score,
+                ranking_score,
                 hard_violations,
                 serial,
             )
@@ -78,8 +80,7 @@ def search_polish_variants(
 
     ranked = sorted(
         scored,
-        key=lambda item: (-item[2], item[1], item[0].score, -item[3]),
-        reverse=True,
+        key=lambda item: (item[2], -item[1], -item[0].score, item[3]),
     )
     return tuple(
         _finalize_ranked_variant(parent_id=candidate.id, rank=rank, candidate=item[0])

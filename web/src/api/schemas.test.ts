@@ -30,6 +30,22 @@ describe('RunSummarySchema', () => {
             by_rule: {},
             bonuses: {},
           },
+          musicality: {
+            total: 84,
+            metrics: [
+              {
+                key: 'contour_variety',
+                label: 'Contour variety',
+                raw_value: 0.75,
+                normalized_value: 0.75,
+                weight: 0.15,
+                higher_is_better: true,
+              },
+            ],
+            raw_values: { contour_variety: 0.75 },
+            normalized_values: { contour_variety: 0.75 },
+            weights: { contour_variety: 0.15 },
+          },
           notes: [],
           violations: [],
           repair_actions: [],

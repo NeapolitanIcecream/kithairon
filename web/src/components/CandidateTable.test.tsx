@@ -52,6 +52,7 @@ describe('CandidateTable', () => {
     await userEvent.click(screen.getByLabelText('Select Candidate 2'))
 
     expect(onSelectCandidate).toHaveBeenCalledWith('repair_0002')
+    expect(screen.getAllByText('70.0')[0]).toBeTruthy()
   })
 })
 
@@ -76,6 +77,13 @@ function candidate(candidateId: string): CandidateViz {
       by_category: {},
       by_rule: {},
       bonuses: {},
+    },
+    musicality: {
+      total: rank === 1 ? 75 : 70,
+      metrics: [],
+      raw_values: {},
+      normalized_values: {},
+      weights: {},
     },
     notes: [],
     violations: [

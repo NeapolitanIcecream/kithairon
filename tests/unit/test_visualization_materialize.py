@@ -149,6 +149,18 @@ def test_materialize_solver_edit_plan_marks_solver_assignments() -> None:
     assert follower_note.transform_origin == "solver"
 
 
+def test_materialize_candidate_attaches_musicality_breakdown() -> None:
+    dto = materialize_candidate(_candidate())
+
+    assert dto.musicality is not None
+    assert dto.musicality.total >= 0
+    assert set(dto.musicality.raw_values) >= {
+        "repeated_note_density",
+        "melodic_leap_pressure",
+        "bass_independence_proxy",
+    }
+
+
 def _candidate(
     *,
     follower_events: tuple[NoteEvent, ...] | None = None,

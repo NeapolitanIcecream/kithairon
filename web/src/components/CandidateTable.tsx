@@ -36,6 +36,7 @@ export function CandidateTable({
           <Table.Tr>
             <Table.Th>Rank</Table.Th>
             <Table.Th>Score</Table.Th>
+            <Table.Th>Music</Table.Th>
             <Table.Th>Engine</Table.Th>
             <Table.Th>Strict</Table.Th>
             <Table.Th>Label</Table.Th>
@@ -62,6 +63,7 @@ export function CandidateTable({
                   </CandidateButton>
                 </Table.Td>
                 <Table.Td>{formatScore(candidate.score.total)}</Table.Td>
+                <Table.Td>{formatOptionalScore(candidate.musicality?.total)}</Table.Td>
                 <Table.Td>
                   <Badge variant="light" color={engineColor(candidate.transform.engine)}>
                     {candidate.transform.engine}
@@ -119,6 +121,10 @@ function CandidateButton({ candidate, onSelectCandidate, children }: CandidateBu
 
 function formatScore(score: number): string {
   return score.toFixed(1)
+}
+
+function formatOptionalScore(score: number | undefined): string {
+  return score === undefined ? '-' : score.toFixed(1)
 }
 
 function mainIssue(candidate: CandidateViz): string {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from typing import cast
 
 from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformSpec, Voice
 from kithairon.polish.models import PolishRequest
@@ -62,6 +63,28 @@ def test_search_returns_no_variants_when_requested_rewrite_voice_is_locked() -> 
     )
 
     assert search_polish_variants(parent, request) == ()
+
+
+def test_polish_ranking_is_stable_and_uses_musicality_for_reduce_repetition() -> None:
+    parent = _candidate()
+    request = PolishRequest(
+        bar_start=2,
+        bar_end=2,
+        lock_voice="leader",
+        rewrite_voice="follower",
+        max_variants=3,
+        objective_preset="reduce_repetition",
+    )
+
+    first = search_polish_variants(parent, request)
+    second = search_polish_variants(parent, request)
+
+    assert [candidate.id for candidate in first] == [candidate.id for candidate in second]
+    objective = cast(dict[str, object], first[0].metadata["polish_objective"])
+    musicality_total = cast(float, objective["musicality_total"])
+    assert musicality_total >= 0
+    follower_pitches = _voice_pitches(first[0], role="follower")
+    assert follower_pitches[4] != follower_pitches[5]
 
 
 def _outside_bar_note_dumps(candidate: CanonCandidate, *, bar: int) -> list[dict[str, object]]:
