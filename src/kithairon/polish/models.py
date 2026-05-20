@@ -10,6 +10,7 @@ from kithairon.visualization.models import CandidateVizDTO, ExperimentDTO
 
 type LockVoice = Literal["leader", "follower", "none"]
 type RewriteVoice = Literal["leader", "follower", "auto"]
+type SearchMode = Literal["local_polish", "rewrite_selected_voice"]
 type ObjectivePreset = Literal[
     "reduce_repetition",
     "smooth_bass",
@@ -53,11 +54,15 @@ class PolishRequest(PolishModel):
     max_variants: int = Field(default=6, ge=1, le=50)
     objective_preset: ObjectivePreset = "general_polish"
     objective_overrides: PolishObjectiveWeights = Field(default_factory=PolishObjectiveWeights)
+    search_mode: SearchMode = "local_polish"
+    allow_rhythm_change: bool = False
 
     @model_validator(mode="after")
-    def validate_bar_order(self) -> PolishRequest:
+    def validate_request(self) -> PolishRequest:
         if self.bar_end < self.bar_start:
             raise ValueError("bar_end must be greater than or equal to bar_start")
+        if self.search_mode == "rewrite_selected_voice" and self.rewrite_voice == "auto":
+            raise ValueError("rewrite_selected_voice mode requires an explicit rewrite_voice")
         return self
 
     @property
@@ -71,6 +76,8 @@ class PolishSummaryDTO(PolishModel):
     lock_voice: LockVoice
     rewrite_voice: Literal["leader", "follower"]
     objective_preset: ObjectivePreset
+    search_mode: SearchMode = "local_polish"
+    allow_rhythm_change: bool = False
     requested_variants: int
     returned_variants: int
     changed_notes: int

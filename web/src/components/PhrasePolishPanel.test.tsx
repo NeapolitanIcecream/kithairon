@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CandidateViz, RunSummary } from '../api/schemas'
@@ -36,9 +36,11 @@ describe('PhrasePolishPanel', () => {
         }
       },
     )
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
   })
 
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
@@ -110,6 +112,76 @@ describe('PhrasePolishPanel', () => {
       rewrite_voice: 'auto',
       max_variants: 6,
       objective_preset: 'general_polish',
+      search_mode: 'local_polish',
+    })
+  })
+
+  it('requests fixed-upper invention mode with an explicit rewrite voice', async () => {
+    const selectedCandidate = candidate('strict_0001')
+    const variant = {
+      ...selectedCandidate,
+      candidate_id: 'strict_0001_polish_001',
+      metadata: {
+        parent_candidate_id: 'strict_0001',
+        search_mode: 'rewrite_selected_voice',
+      },
+    }
+    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+      return new Response(
+        JSON.stringify({
+          request: {
+            bar_start: 1,
+            bar_end: 1,
+            lock_voice: 'leader',
+            rewrite_voice: 'follower',
+            max_variants: 6,
+            objective_preset: 'smooth_bass',
+            objective_overrides: {},
+            search_mode: 'rewrite_selected_voice',
+            allow_rhythm_change: false,
+          },
+          summary: {
+            parent_candidate_id: 'strict_0001',
+            edited_bars: [1],
+            lock_voice: 'leader',
+            rewrite_voice: 'follower',
+            objective_preset: 'smooth_bass',
+            search_mode: 'rewrite_selected_voice',
+            allow_rhythm_change: false,
+            requested_variants: 6,
+            returned_variants: 1,
+            changed_notes: 1,
+          },
+          candidates: [variant],
+        }),
+        {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        },
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const view = renderPanel({
+      runSummary: runSummary(selectedCandidate),
+      candidates: [selectedCandidate],
+      selectedCandidateId: selectedCandidate.candidate_id,
+      selectedCandidate,
+      onVariantsReceived: vi.fn(),
+    })
+
+    await userEvent.click(within(view.container).getByLabelText('Mode'))
+    fireEvent.click(screen.getByText('Rewrite lower under fixed upper'))
+    await userEvent.click(screen.getByRole('button', { name: 'Polish' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    const calls = fetchMock.mock.calls as Array<[string, RequestInit]>
+    expect(JSON.parse(calls[0][1].body as string)).toMatchObject({
+      lock_voice: 'leader',
+      rewrite_voice: 'follower',
+      objective_preset: 'smooth_bass',
+      search_mode: 'rewrite_selected_voice',
+      allow_rhythm_change: false,
     })
   })
 })
@@ -133,7 +205,7 @@ function renderPanel({
       mutations: { retry: false },
     },
   })
-  render(
+  return render(
     <QueryClientProvider client={queryClient}>
       <MantineProvider>
         <PhrasePolishPanel

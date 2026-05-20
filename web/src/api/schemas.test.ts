@@ -75,6 +75,8 @@ describe('PolishResultSchema', () => {
         max_variants: 2,
         objective_preset: 'reduce_repetition',
         objective_overrides: { repeated_note_penalty: 1.5 },
+        search_mode: 'rewrite_selected_voice',
+        allow_rhythm_change: false,
       },
       summary: {
         parent_candidate_id: 'strict_0001',
@@ -82,6 +84,8 @@ describe('PolishResultSchema', () => {
         lock_voice: 'leader',
         rewrite_voice: 'follower',
         objective_preset: 'reduce_repetition',
+        search_mode: 'rewrite_selected_voice',
+        allow_rhythm_change: false,
         requested_variants: 2,
         returned_variants: 1,
         changed_notes: 1,
@@ -161,6 +165,7 @@ describe('PolishResultSchema', () => {
 
     const result = PolishResultSchema.parse(payload)
     expect(result.summary.returned_variants).toBe(1)
+    expect(result.summary.search_mode).toBe('rewrite_selected_voice')
     expect(result.experiment?.experiment_id).toBe('experiment-0001')
   })
 })

@@ -48,6 +48,8 @@ def polish_candidate_dto(
             lock_voice=request.lock_voice,
             rewrite_voice=rewrite_voice,
             objective_preset=request.objective_preset,
+            search_mode=request.search_mode,
+            allow_rhythm_change=request.allow_rhythm_change,
             requested_variants=request.max_variants,
             returned_variants=len(result_candidates),
             changed_notes=_changed_note_count(candidate_dto, result_candidates),

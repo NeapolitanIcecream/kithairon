@@ -776,6 +776,11 @@
       "PolishRequest": {
         "additionalProperties": false,
         "properties": {
+          "allow_rhythm_change": {
+            "default": false,
+            "title": "Allow Rhythm Change",
+            "type": "boolean"
+          },
           "bar_end": {
             "minimum": 1.0,
             "title": "Bar End",
@@ -807,6 +812,10 @@
           "rewrite_voice": {
             "$ref": "#/components/schemas/RewriteVoice",
             "default": "auto"
+          },
+          "search_mode": {
+            "$ref": "#/components/schemas/SearchMode",
+            "default": "local_polish"
           }
         },
         "required": [
@@ -990,6 +999,13 @@
         ],
         "title": "ScoreBreakdownDTO",
         "type": "object"
+      },
+      "SearchMode": {
+        "enum": [
+          "local_polish",
+          "rewrite_selected_voice"
+        ],
+        "type": "string"
       },
       "TransformOriginDTO": {
         "enum": [

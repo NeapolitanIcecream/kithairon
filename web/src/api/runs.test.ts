@@ -162,6 +162,8 @@ describe('polishCandidate', () => {
       max_variants: 2,
       objective_preset: 'reduce_repetition',
       objective_overrides: { repeated_note_penalty: 1.5 },
+      search_mode: 'local_polish',
+      allow_rhythm_change: false,
     })
   })
 })

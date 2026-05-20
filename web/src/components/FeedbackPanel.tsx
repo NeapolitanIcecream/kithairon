@@ -73,6 +73,8 @@ export function FeedbackPanel({
         maxVariants: action.request.max_variants,
         objectivePreset: action.request.objective_preset,
         objectiveOverrides: action.request.objective_overrides,
+        searchMode: action.request.search_mode,
+        allowRhythmChange: action.request.allow_rhythm_change,
       })
     },
     onSuccess: (result) => {

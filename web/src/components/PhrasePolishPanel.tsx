@@ -21,6 +21,7 @@ import type {
   PolishResult,
   RewriteVoice,
   RunSummary,
+  SearchMode,
 } from '../api/schemas'
 
 type PhrasePolishPanelProps = {
@@ -51,6 +52,14 @@ const objectivePresetOptions: Array<{ value: ObjectivePreset; label: string }> =
   { value: 'strengthen_cadence', label: 'Strengthen cadence' },
 ]
 
+type PolishMode = 'local_polish' | 'rewrite_follower' | 'rewrite_leader'
+
+const polishModeOptions: Array<{ value: PolishMode; label: string }> = [
+  { value: 'local_polish', label: 'Local polish' },
+  { value: 'rewrite_follower', label: 'Rewrite lower under fixed upper' },
+  { value: 'rewrite_leader', label: 'Rewrite upper above fixed lower' },
+]
+
 export function PhrasePolishPanel({
   runSummary,
   candidates,
@@ -64,6 +73,7 @@ export function PhrasePolishPanel({
   const [lockVoice, setLockVoice] = useState<LockVoice>('none')
   const [rewriteVoice, setRewriteVoice] = useState<RewriteVoice>('auto')
   const [objectivePreset, setObjectivePreset] = useState<ObjectivePreset>('general_polish')
+  const [polishMode, setPolishMode] = useState<PolishMode>('local_polish')
   const [maxVariants, setMaxVariants] = useState(6)
   const [lastResult, setLastResult] = useState<PolishResult | null>(null)
 
@@ -85,13 +95,15 @@ export function PhrasePolishPanel({
       if (runSummary === null || selectedCandidate === null) {
         throw new Error('Select a run candidate before polishing.')
       }
+      const plan = voicePlanForMode(polishMode, lockVoice, rewriteVoice)
       return polishCandidate(runSummary.run_id, selectedCandidate.candidate_id, {
         barStart,
         barEnd,
-        lockVoice,
-        rewriteVoice,
+        lockVoice: plan.lockVoice,
+        rewriteVoice: plan.rewriteVoice,
         maxVariants,
         objectivePreset,
+        searchMode: plan.searchMode,
       })
     },
     onSuccess: (result) => {
@@ -133,22 +145,39 @@ export function PhrasePolishPanel({
           onChange={(value) => setBarEnd(toPositiveInteger(value, barStart))}
         />
       </Group>
-      <Group grow align="flex-end">
-        <Select
-          label="Lock"
-          data={lockVoiceOptions}
-          value={lockVoice}
-          allowDeselect={false}
-          onChange={(value) => setLockVoice((value ?? 'none') as LockVoice)}
-        />
-        <Select
-          label="Rewrite"
-          data={rewriteVoiceOptions}
-          value={rewriteVoice}
-          allowDeselect={false}
-          onChange={(value) => setRewriteVoice((value ?? 'auto') as RewriteVoice)}
-        />
-      </Group>
+      <Select
+        label="Mode"
+        data={polishModeOptions}
+        value={polishMode}
+        allowDeselect={false}
+        onChange={(value) => {
+          const nextMode = (value ?? 'local_polish') as PolishMode
+          setPolishMode(nextMode)
+          if (nextMode === 'rewrite_follower') {
+            setObjectivePreset('smooth_bass')
+          } else if (nextMode === 'rewrite_leader') {
+            setObjectivePreset('general_polish')
+          }
+        }}
+      />
+      {polishMode === 'local_polish' ? (
+        <Group grow align="flex-end">
+          <Select
+            label="Lock"
+            data={lockVoiceOptions}
+            value={lockVoice}
+            allowDeselect={false}
+            onChange={(value) => setLockVoice((value ?? 'none') as LockVoice)}
+          />
+          <Select
+            label="Rewrite"
+            data={rewriteVoiceOptions}
+            value={rewriteVoice}
+            allowDeselect={false}
+            onChange={(value) => setRewriteVoice((value ?? 'auto') as RewriteVoice)}
+          />
+        </Group>
+      ) : null}
       <Select
         label="Preset"
         data={objectivePresetOptions}
@@ -230,6 +259,24 @@ function toPositiveInteger(value: string | number, fallback: number): number {
     return fallback
   }
   return Math.floor(parsed)
+}
+
+function voicePlanForMode(
+  polishMode: PolishMode,
+  lockVoice: LockVoice,
+  rewriteVoice: RewriteVoice,
+): {
+  lockVoice: LockVoice
+  rewriteVoice: RewriteVoice
+  searchMode: SearchMode
+} {
+  if (polishMode === 'rewrite_follower') {
+    return { lockVoice: 'leader', rewriteVoice: 'follower', searchMode: 'rewrite_selected_voice' }
+  }
+  if (polishMode === 'rewrite_leader') {
+    return { lockVoice: 'follower', rewriteVoice: 'leader', searchMode: 'rewrite_selected_voice' }
+  }
+  return { lockVoice, rewriteVoice, searchMode: 'local_polish' }
 }
 
 function readableErrorMessage(error: Error): string {

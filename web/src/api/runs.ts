@@ -13,6 +13,7 @@ import {
   type PolishResult,
   type RewriteVoice,
   type RunSummary,
+  type SearchMode,
 } from './schemas'
 
 export type GenerationEngine = 'auto' | 'strict' | 'repair' | 'solver'
@@ -39,6 +40,8 @@ export type PolishCandidateOptions = {
   maxVariants?: number
   objectivePreset?: ObjectivePreset
   objectiveOverrides?: PolishObjectiveWeights
+  searchMode?: SearchMode
+  allowRhythmChange?: boolean
 }
 
 export type PatchExperimentOptions = {
@@ -100,6 +103,8 @@ export async function polishCandidate(
         max_variants: options.maxVariants ?? 6,
         objective_preset: options.objectivePreset ?? 'general_polish',
         objective_overrides: options.objectiveOverrides ?? {},
+        search_mode: options.searchMode ?? 'local_polish',
+        allow_rhythm_change: options.allowRhythmChange ?? false,
       }),
     },
     clientOptions,

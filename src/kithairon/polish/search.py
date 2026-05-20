@@ -61,6 +61,8 @@ def search_polish_variants(
                         "parent_candidate_id": candidate.id,
                         "edited_bars": request.bar_range.as_list(),
                         "rewrite_voice": rewrite_role,
+                        "search_mode": request.search_mode,
+                        "allow_rhythm_change": request.allow_rhythm_change,
                         "polish_variant_serial": serial,
                         "polish_objective": {
                             "preset": request.objective_preset,
@@ -142,6 +144,10 @@ def _candidate_substitutions(
 
 
 def _pitch_deltas(request: PolishRequest) -> tuple[int, ...]:
+    if request.search_mode == "rewrite_selected_voice":
+        if request.objective_preset == "smooth_bass":
+            return (-2, 2, -1, 1, -5, 5, -7, 7, -12, 12)
+        return (-2, 2, -1, 1, -3, 3, -4, 4, -5, 5, -7, 7, -9, 9, -12, 12)
     if request.objective_preset == "smooth_bass":
         return (-2, 2, -1, 1, -5, 5, -7, 7)
     if request.objective_preset == "strengthen_cadence":

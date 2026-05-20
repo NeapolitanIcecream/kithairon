@@ -473,6 +473,11 @@ export interface components {
         };
         /** PolishRequest */
         PolishRequest: {
+            /**
+             * Allow Rhythm Change
+             * @default false
+             */
+            allow_rhythm_change: boolean;
             /** Bar End */
             bar_end: number;
             /** Bar Start */
@@ -489,6 +494,8 @@ export interface components {
             objective_preset: components["schemas"]["ObjectivePreset"];
             /** @default auto */
             rewrite_voice: components["schemas"]["RewriteVoice"];
+            /** @default local_polish */
+            search_mode: components["schemas"]["SearchMode"];
         };
         /** RationalDTO */
         RationalDTO: {
@@ -542,6 +549,8 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** @enum {string} */
+        SearchMode: "local_polish" | "rewrite_selected_voice";
         /** @enum {string} */
         TransformOriginDTO: "input" | "strict_transform" | "repair" | "solver" | "unknown";
         /** TransformVizDTO */

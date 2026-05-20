@@ -187,6 +187,7 @@ export const ObjectivePresetSchema = z.enum([
   'strengthen_cadence',
   'general_polish',
 ])
+export const SearchModeSchema = z.enum(['local_polish', 'rewrite_selected_voice'])
 
 export const PolishObjectiveWeightsSchema = z.object({
   repeated_note_penalty: z.number().nullable().optional(),
@@ -203,6 +204,8 @@ export const PolishRequestSchema = z.object({
   max_variants: z.number().int(),
   objective_preset: ObjectivePresetSchema,
   objective_overrides: PolishObjectiveWeightsSchema,
+  search_mode: SearchModeSchema.optional().default('local_polish'),
+  allow_rhythm_change: z.boolean().optional().default(false),
 })
 
 export const PolishSummarySchema = z.object({
@@ -211,6 +214,8 @@ export const PolishSummarySchema = z.object({
   lock_voice: LockVoiceSchema,
   rewrite_voice: ResolvedRewriteVoiceSchema,
   objective_preset: ObjectivePresetSchema,
+  search_mode: SearchModeSchema.optional().default('local_polish'),
+  allow_rhythm_change: z.boolean().optional().default(false),
   requested_variants: z.number().int(),
   returned_variants: z.number().int(),
   changed_notes: z.number().int(),
@@ -287,6 +292,7 @@ export type RunSummary = z.infer<typeof RunSummarySchema>
 export type LockVoice = z.infer<typeof LockVoiceSchema>
 export type RewriteVoice = z.infer<typeof RewriteVoiceSchema>
 export type ObjectivePreset = z.infer<typeof ObjectivePresetSchema>
+export type SearchMode = z.infer<typeof SearchModeSchema>
 export type PolishObjectiveWeights = z.infer<typeof PolishObjectiveWeightsSchema>
 export type PolishRequest = z.infer<typeof PolishRequestSchema>
 export type PolishSummary = z.infer<typeof PolishSummarySchema>

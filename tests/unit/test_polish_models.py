@@ -20,6 +20,16 @@ def test_polish_request_validates_selected_bar_range_and_voice_options() -> None
     assert request.bar_range.as_list() == [2, 3, 4]
 
 
+def test_polish_request_requires_explicit_voice_for_fixed_voice_invention() -> None:
+    with pytest.raises(ValidationError, match="explicit rewrite_voice"):
+        PolishRequest(
+            bar_start=1,
+            bar_end=2,
+            search_mode="rewrite_selected_voice",
+            rewrite_voice="auto",
+        )
+
+
 def test_polish_request_rejects_reversed_bar_range() -> None:
     with pytest.raises(ValidationError, match="bar_end"):
         PolishRequest(bar_start=4, bar_end=2)
@@ -42,4 +52,7 @@ def test_polish_result_dto_serializes_summary_and_candidates() -> None:
         candidates=[],
     )
 
-    assert result.model_dump(mode="json")["summary"]["parent_candidate_id"] == "strict_0001"
+    summary = result.model_dump(mode="json")["summary"]
+    assert summary["parent_candidate_id"] == "strict_0001"
+    assert summary["search_mode"] == "local_polish"
+    assert summary["allow_rhythm_change"] is False
