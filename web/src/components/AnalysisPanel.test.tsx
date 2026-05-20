@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { MantineProvider } from '@mantine/core'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AnalysisPanel } from './AnalysisPanel'
 
@@ -21,10 +22,14 @@ describe('AnalysisPanel', () => {
     })
   })
 
-  it('shows phrase, cadence, and bass summaries', () => {
+  it('shows phrase, cadence, and bass summaries', async () => {
+    const onHighlightEvents = vi.fn()
+    const onPolishFinding = vi.fn()
     render(
       <MantineProvider>
         <AnalysisPanel
+          onHighlightEvents={onHighlightEvents}
+          onPolishFinding={onPolishFinding}
           analysis={{
             phrases: [
               {
@@ -97,10 +102,43 @@ describe('AnalysisPanel', () => {
     expect(screen.getByText('Analysis')).toBeTruthy()
     expect(screen.getByText('Bars 1-2')).toBeTruthy()
     expect(screen.getByText('Weak final cadence')).toBeTruthy()
-    expect(screen.getByText('Arrival leader:l4 / high 67')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Arrival leader:l4' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'High 67' })).toBeTruthy()
     expect(screen.getByText('flat_sequence')).toBeTruthy()
     expect(screen.getByText('Open Phrase')).toBeTruthy()
     expect(screen.getByText('Support 100% / foundation 75% / independence 20%')).toBeTruthy()
     expect(screen.getByText('static')).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'follower:f1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'repeated_note_plateau' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Polish finding' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Polish cadence' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Polish bass support' }))
+
+    expect(onHighlightEvents).toHaveBeenCalledWith(['follower:f1'])
+    expect(onHighlightEvents).toHaveBeenCalledWith([
+      'follower:f1',
+      'follower:f2',
+      'follower:f3',
+    ])
+    expect(onPolishFinding).toHaveBeenCalledWith({
+      barStart: 1,
+      barEnd: 2,
+      objectivePreset: 'reduce_repetition',
+    })
+    expect(onPolishFinding).toHaveBeenCalledWith({
+      barStart: 1,
+      barEnd: 1,
+      rewriteVoice: 'auto',
+      objectivePreset: 'strengthen_cadence',
+    })
+    expect(onPolishFinding).toHaveBeenCalledWith({
+      barStart: 1,
+      barEnd: 2,
+      lockVoice: 'leader',
+      rewriteVoice: 'follower',
+      objectivePreset: 'smooth_bass',
+      searchMode: 'rewrite_selected_voice',
+    })
   })
 })

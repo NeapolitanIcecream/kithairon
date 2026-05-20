@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import {
   Alert,
   AppShell,
@@ -13,8 +14,8 @@ import {
 } from '@mantine/core'
 import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
 import type { Experiment } from '../api/schemas'
-import { listExperiments } from '../api/runs'
-import { AnalysisPanel } from './AnalysisPanel'
+import { listExperiments, polishCandidate, type PolishCandidateOptions } from '../api/runs'
+import { AnalysisPanel, type AnalysisPolishRequest } from './AnalysisPanel'
 import { CandidateLabPanel } from './CandidateLabPanel'
 import { CandidateTable } from './CandidateTable'
 import { CompareView } from './CompareView'
@@ -29,6 +30,12 @@ import { ScoreView } from './ScoreView'
 import { StrictRelaxedDiff } from './StrictRelaxedDiff'
 import { UploadPanel } from './UploadPanel'
 import { ViolationInspector } from './ViolationInspector'
+import {
+  candidateSource,
+  mergeCandidateUniverse,
+  parentCandidateId,
+  sourceExperimentId,
+} from './candidateUniverse'
 
 export function KithaironAppShell() {
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null)
@@ -40,7 +47,10 @@ export function KithaironAppShell() {
   const [activePlaybackEventIds, setActivePlaybackEventIds] = useState<string[]>([])
   const [experiments, setExperiments] = useState<Experiment[]>([])
   const [compareCandidateIds, setCompareCandidateIds] = useState<string[]>([])
-  const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
+  const candidates = useMemo(
+    () => mergeCandidateUniverse(runSummary?.candidates ?? [], experiments),
+    [runSummary, experiments],
+  )
   const selectedCandidate = useMemo(
     () =>
       candidates.find((candidate) => candidate.candidate_id === selectedCandidateId) ?? null,
@@ -76,6 +86,17 @@ export function KithaironAppShell() {
   const modifiedEventIds = uniqueEventIds(
     selectedCandidate?.repair_actions.flatMap(repairActionEventIds) ?? [],
   )
+  const analysisPolishMutation = useMutation({
+    mutationFn: (request: PolishCandidateOptions) => {
+      if (runSummary === null || selectedCandidate === null) {
+        throw new Error('Select a run candidate before polishing an analysis finding.')
+      }
+      return polishCandidate(runSummary.run_id, selectedCandidate.candidate_id, request)
+    },
+    onSuccess: (result) => {
+      handlePolishVariants(result.candidates, result.experiment)
+    },
+  })
 
   function handleRunLoaded(nextRunSummary: RunSummary) {
     setRunSummary(nextRunSummary)
@@ -160,6 +181,24 @@ export function KithaironAppShell() {
     setSelectedRepairActionId(action.action_id)
     setSelectedViolationId(null)
     setSelectedEventId(action.new_event_id ?? action.original_event_id)
+  }
+
+  function handleAnalysisHighlight(eventIds: string[]) {
+    setSelectedEventId(eventIds[0] ?? null)
+    setSelectedViolationId(null)
+    setSelectedRepairActionId(null)
+    setActivePlaybackEventIds(eventIds)
+  }
+
+  function handleAnalysisPolish(request: AnalysisPolishRequest) {
+    analysisPolishMutation.mutate({
+      barStart: request.barStart,
+      barEnd: request.barEnd,
+      lockVoice: request.lockVoice ?? 'none',
+      rewriteVoice: request.rewriteVoice ?? 'auto',
+      objectivePreset: request.objectivePreset,
+      searchMode: request.searchMode ?? 'local_polish',
+    })
   }
 
   return (
@@ -319,8 +358,19 @@ export function KithaironAppShell() {
                   <MusicalityBreakdown musicality={selectedCandidate.musicality} />
                 </Box>
                 <Box mt="md">
-                  <AnalysisPanel analysis={selectedCandidate.analysis} />
+                  <AnalysisPanel
+                    analysis={selectedCandidate.analysis}
+                    polishDisabled={runSummary === null || selectedCandidate === null}
+                    polishRunning={analysisPolishMutation.isPending}
+                    onHighlightEvents={handleAnalysisHighlight}
+                    onPolishFinding={handleAnalysisPolish}
+                  />
                 </Box>
+                {analysisPolishMutation.error instanceof Error ? (
+                  <Alert color="red" variant="light" title="Analysis action failed" mt="md">
+                    {analysisPolishMutation.error.message}
+                  </Alert>
+                ) : null}
               </Box>
             ) : null}
             <Box mt="md">
@@ -375,6 +425,9 @@ function CandidateSummary({ candidate, runSummary }: CandidateSummaryProps) {
         <Badge variant="light" color="gray">
           {candidate.transform.engine}
         </Badge>
+        <Badge variant="light" color={candidateSource(candidate) === 'experiment' ? 'violet' : 'gray'}>
+          {candidateSource(candidate)}
+        </Badge>
       </Group>
       <Title order={2} className="candidate-heading">
         {candidate.title}
@@ -390,6 +443,12 @@ function CandidateSummary({ candidate, runSummary }: CandidateSummaryProps) {
       <Text size="sm" c="dimmed">
         {runSummary.input_name}
       </Text>
+      {candidateSource(candidate) === 'experiment' ? (
+        <Text size="sm" c="dimmed">
+          {sourceExperimentId(candidate) ?? 'experiment'} / parent{' '}
+          {parentCandidateId(candidate) ?? '-'}
+        </Text>
+      ) : null}
     </Stack>
   )
 }
