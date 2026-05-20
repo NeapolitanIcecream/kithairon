@@ -59,6 +59,31 @@ describe('CandidateTable', () => {
     expect(onToggleCompareCandidate).toHaveBeenCalledWith('repair_0002')
     expect(screen.getAllByText('70.0')[0]).toBeTruthy()
   })
+
+  it('shows provenance for experiment-derived candidates', () => {
+    render(
+      <MantineProvider>
+        <CandidateTable
+          candidates={[
+            candidate('strict_0001'),
+            {
+              ...candidate('strict_0001_polish_001'),
+              metadata: {
+                source_kind: 'experiment',
+                source_experiment_id: 'experiment-0001',
+                parent_candidate_id: 'strict_0001',
+              },
+            },
+          ]}
+          selectedCandidateId="strict_0001"
+          onSelectCandidate={vi.fn()}
+        />
+      </MantineProvider>,
+    )
+
+    expect(screen.getByText('experiment')).toBeTruthy()
+    expect(screen.getByText('experiment-0001')).toBeTruthy()
+  })
 })
 
 function candidate(candidateId: string): CandidateViz {

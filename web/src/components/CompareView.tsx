@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Alert, Anchor, Badge, Button, Group, Stack, Table, Text, Title } from '@mantine/core'
 import type { CandidateViz, RunSummary } from '../api/schemas'
+import { candidateSource, sourceExperimentId } from './candidateUniverse'
 
 type CompareViewProps = {
   runSummary: RunSummary | null
@@ -98,7 +99,15 @@ function CandidateHeader({ candidate }: { candidate: CandidateViz }) {
         <Badge variant="light" color="gray">
           {candidate.transform.engine}
         </Badge>
+        <Badge variant="light" color={candidateSource(candidate) === 'experiment' ? 'violet' : 'gray'}>
+          {candidateSource(candidate)}
+        </Badge>
       </Group>
+      {sourceExperimentId(candidate) === null ? null : (
+        <Text size="xs" c="dimmed">
+          {sourceExperimentId(candidate)}
+        </Text>
+      )}
     </Stack>
   )
 }

@@ -20,11 +20,15 @@ from kithairon.config import (
     load_config,
 )
 from kithairon.errors import Diagnostic, KithaironError
-from kithairon.experiments import create_experiment, list_experiments, patch_experiment
+from kithairon.experiments import (
+    create_experiment,
+    list_experiments,
+    load_candidate_catalog,
+    patch_experiment,
+)
 from kithairon.feedback import FeedbackTranslateRequest, translate_feedback
 from kithairon.pipeline import run_generation
 from kithairon.polish import PolishRequest, polish_run_candidate
-from kithairon.polish.run_io import load_run_summary
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
 )
@@ -399,8 +403,8 @@ def _translate_feedback_endpoint(settings: ApiSettings) -> Any:
         run_id: str,
         request: FeedbackTranslateRequest,
     ) -> dict[str, object]:
-        current_run = load_run_summary(run_dir(settings, run_id))
-        candidate = _feedback_candidate(current_run.candidates, request.candidate_id)
+        catalog = load_candidate_catalog(run_dir(settings, run_id))
+        candidate = _feedback_candidate(list(catalog.candidates), request.candidate_id)
         translation = translate_feedback(request, candidate=candidate)
         return translation.model_dump(mode="json")
 

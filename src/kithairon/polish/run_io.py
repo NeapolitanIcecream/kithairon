@@ -9,7 +9,7 @@ from typing import cast
 from pydantic import ValidationError
 
 from kithairon.config import load_config
-from kithairon.errors import PolishError
+from kithairon.errors import KithaironError, PolishError
 from kithairon.polish.apply import polish_candidate_dto
 from kithairon.polish.models import PolishRequest, PolishResultDTO
 from kithairon.visualization.models import CandidateVizDTO, RunSummaryDTO
@@ -20,8 +20,7 @@ def polish_run_candidate(
     candidate_id: str,
     request: PolishRequest,
 ) -> PolishResultDTO:
-    run = load_run_summary(run_dir)
-    candidate = _candidate_by_id(run, candidate_id)
+    candidate = _catalog_candidate(run_dir, candidate_id)
     config_path = run_dir / "resolved_config.toml"
     config = load_config(config_path if config_path.exists() else None)
     return polish_candidate_dto(
@@ -30,6 +29,21 @@ def polish_run_candidate(
         score_profile=config.scoring.profile,
         quality=config.quality,
     )
+
+
+def _catalog_candidate(run_dir: Path, candidate_id: str) -> CandidateVizDTO:
+    from kithairon.experiments.catalog import load_candidate_catalog
+
+    try:
+        return load_candidate_catalog(run_dir).get(candidate_id).candidate
+    except KithaironError as exc:
+        if exc.diagnostic.code == "candidate_not_found":
+            raise PolishError(
+                "Candidate was not found in this run.",
+                code="polish_candidate_not_found",
+                details=dict(exc.diagnostic.details),
+            ) from exc
+        raise
 
 
 def load_run_summary(run_dir: Path) -> RunSummaryDTO:
@@ -57,14 +71,3 @@ def load_run_summary(run_dir: Path) -> RunSummaryDTO:
             code="polish_visualization_invalid",
             details={"path": str(path), "errors": cast(object, exc.errors(include_url=False))},
         ) from exc
-
-
-def _candidate_by_id(run: RunSummaryDTO, candidate_id: str) -> CandidateVizDTO:
-    for candidate in run.candidates:
-        if candidate.candidate_id == candidate_id:
-            return candidate
-    raise PolishError(
-        "Candidate was not found in this run.",
-        code="polish_candidate_not_found",
-        details={"run_id": run.run_id, "candidate_id": candidate_id},
-    )

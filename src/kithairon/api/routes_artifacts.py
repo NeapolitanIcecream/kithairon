@@ -11,9 +11,10 @@ from kithairon.api.app import (
     RenderRequest,
     artifact_index_path,
     download_response,
-    read_json_object,
     run_dir,
 )
+from kithairon.errors import KithaironError
+from kithairon.experiments.catalog import load_candidate_catalog
 from kithairon.visualization.artifact_index import (
     resolve_candidate_artifact,
     resolve_run_artifact,
@@ -107,33 +108,17 @@ def _render_candidate_endpoint(settings: ApiSettings) -> Any:
 
 
 def _candidate_payload(settings: ApiSettings, run_id: str, candidate_id: str) -> dict[str, object]:
-    candidates = _visualization_candidates(
-        read_json_object(run_dir(settings, run_id) / "visualization.json")
-    )
-    for candidate in candidates:
-        if candidate.get("candidate_id") == candidate_id:
-            return {str(key): value for key, value in candidate.items()}
-    raise ApiError(
-        "Candidate was not found in this run.",
-        code="candidate_not_found",
-        status_code=404,
-        details={"run_id": run_id, "candidate_id": candidate_id},
-    )
-
-
-def _visualization_candidates(visualization: dict[str, object]) -> list[dict[object, object]]:
-    candidates = visualization.get("candidates")
-    if not isinstance(candidates, list):
+    try:
+        candidate = load_candidate_catalog(run_dir(settings, run_id)).get(candidate_id).candidate
+    except KithaironError as exc:
+        status_code = 404 if exc.diagnostic.code == "candidate_not_found" else 400
         raise ApiError(
-            "Visualization payload does not contain candidates.",
-            code="visualization_candidates_invalid",
-            status_code=500,
-        )
-    mapped_candidates: list[dict[object, object]] = []
-    for candidate in cast(list[object], candidates):
-        if isinstance(candidate, dict):
-            mapped_candidates.append(cast(dict[object, object], candidate))
-    return mapped_candidates
+            exc.diagnostic.message,
+            code=exc.diagnostic.code,
+            status_code=status_code,
+            details=dict(exc.diagnostic.details),
+        ) from exc
+    return candidate.model_dump(mode="json")
 
 
 def _candidate_artifact_response(

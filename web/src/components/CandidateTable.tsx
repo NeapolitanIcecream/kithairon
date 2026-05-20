@@ -10,6 +10,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import type { CandidateViz } from '../api/schemas'
+import { candidateSource, sourceExperimentId } from './candidateUniverse'
 
 type CandidateTableProps = {
   candidates: CandidateViz[]
@@ -44,6 +45,7 @@ export function CandidateTable({
             <Table.Th>Music</Table.Th>
             <Table.Th>Engine</Table.Th>
             <Table.Th>Strict</Table.Th>
+            <Table.Th>Source</Table.Th>
             <Table.Th>Label</Table.Th>
             <Table.Th>Delay</Table.Th>
             <Table.Th>Interval</Table.Th>
@@ -83,6 +85,9 @@ export function CandidateTable({
                     {candidate.transform.strict_canon ? 'yes' : 'no'}
                   </Badge>
                 </Table.Td>
+                <Table.Td>
+                  <SourceBadge candidate={candidate} />
+                </Table.Td>
                 <Table.Td>{candidate.transform.label}</Table.Td>
                 <Table.Td>{candidate.transform.delay_q?.text ?? '-'}</Table.Td>
                 <Table.Td>{candidate.transform.interval ?? '-'}</Table.Td>
@@ -108,6 +113,23 @@ export function CandidateTable({
         </Table.Tbody>
       </Table>
     </ScrollArea>
+  )
+}
+
+function SourceBadge({ candidate }: { candidate: CandidateViz }) {
+  const source = candidateSource(candidate)
+  const experimentId = sourceExperimentId(candidate)
+  return (
+    <Group gap={4} wrap="nowrap">
+      <Badge variant="light" color={source === 'experiment' ? 'violet' : 'gray'}>
+        {source}
+      </Badge>
+      {experimentId === null ? null : (
+        <Text size="xs" c="dimmed">
+          {experimentId}
+        </Text>
+      )}
+    </Group>
   )
 }
 
