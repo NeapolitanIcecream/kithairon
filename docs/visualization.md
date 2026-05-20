@@ -70,10 +70,29 @@ Use `Phrase Polish` to search local variants for the selected candidate. Choose 
 - `Rewrite upper above fixed lower` keeps the follower fixed and searches a new leader line.
 
 The polish result is added to the candidate list and stored as an experiment in `Candidate Lab`.
+Experiment variants survive reload. When you reopen a run, saved variants are merged back into
+the same candidate pool as the base run candidates, so you can select them, polish them again,
+use them in feedback translation, or add them to A/B compare.
+
+Fixed-voice invention uses the same local polish API, but its ranking is specialized:
+
+- lower-voice rewrites reward stronger bass support, root-support proxy, foundation, and bass independence
+- upper-voice rewrites reward better contour, fewer phrase warnings, and clearer cadence motion
+
+Fixed-voice mode also uses bounded multi-edit pitch search. Durations, note count, and the locked
+voice stay fixed, but the selected span can change more than one note when that gives a better
+local result.
 
 Use `Feedback` when you want to start from plain text instead of choosing objective weights. Examples such as `cadence weak`, `bass too static`, `too repetitive`, and `too many leaps` translate into structured polish actions. Review the suggested action, then run it to create variants from the selected candidate.
 
-Use the `Analysis` panel in the inspector to check the current candidate before and after edits. It shows phrase spans, the final cadence summary, and whether the lower voice is static, stepwise, or active.
+Use the `Analysis` panel in the inspector to check the current candidate before and after edits.
+It shows phrase spans, cadence summaries, strong-beat bass support notes, and whether the lower
+voice is static, stepwise, or active. Analysis rows are actionable:
+
+- click phrase rows, plateau warnings, arrivals, high points, cadence rows, or support notes to highlight the related piano-roll events
+- use `Polish finding` on phrase warnings to run `reduce_repetition` over that phrase span
+- use `Polish cadence` on weak or open cadence rows to run `strengthen_cadence` over the ending bars
+- use `Polish bass support` on static bass summaries to run fixed-lower rewrite over the affected bars
 
 ## Download artifacts
 

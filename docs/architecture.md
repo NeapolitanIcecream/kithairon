@@ -28,6 +28,9 @@ MIDI or MusicXML input
 | `rules/` | Reports consonance, dissonance, parallel, crossing, range, leap, and cadence violations. |
 | `scoring/` | Converts violations into weighted score breakdowns and ranks candidates. |
 | `engines/` | Implements strict generation, repair search, and optional CP-SAT solver search. |
+| `experiments/` | Persists polish experiments and builds the run-local catalog that merges base candidates with saved variants. |
+| `polish/` | Runs selected-bar local polish and fixed-voice bounded multi-edit pitch search. |
+| `feedback/` | Translates plain-language feedback into deterministic polish requests. |
 | `export.py` | Writes MIDI and MusicXML candidate outputs. |
 | `pipeline.py` | Orchestrates a complete CLI or API generation run. |
 | `visualization/` | Builds browser-facing data and artifact indexes. |
@@ -42,6 +45,25 @@ The `repair` engine starts from strict candidates and edits a limited number of 
 The `solver` engine uses OR-Tools CP-SAT to search for a relaxed follower voice under edit limits. It keeps objective cost calculation in `engines/solver_objective.py` so pitch options and weights can be tested separately from CP-SAT model construction.
 
 The `auto` engine ranks strict candidates first, then adds repair or solver candidates only when the configured quality thresholds call for them.
+
+## Composition Assist Flow
+
+Composition assist starts from the browser-facing candidate DTOs in `visualization.json`.
+`polish/run_io.py` resolves the requested candidate through the run-local catalog instead of
+only reading base run candidates. The catalog includes:
+
+- base candidates from `visualization.json`
+- persisted experiment variants from `experiments/*/experiment.json`
+- provenance metadata: `source_kind`, `source_experiment_id`, and `parent_candidate_id`
+
+That read path lets a saved experiment variant behave like any other candidate after reload.
+The API can polish it again, translate feedback against it, return it through the candidate
+endpoint, and serve its artifacts through `artifact_index.json`.
+
+Fixed-voice invention is implemented as a specialized polish mode, not a separate generation
+engine. It keeps the locked voice fixed, preserves rhythm and note count, and searches a bounded
+set of pitch edits in the selected bars. Lower-voice search ranks variants with bass-support
+analysis signals. Upper-voice search ranks variants with phrase, contour, and cadence signals.
 
 ## Generated Artifacts
 

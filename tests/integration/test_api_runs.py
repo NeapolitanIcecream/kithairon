@@ -221,6 +221,145 @@ def test_experiment_api_lists_and_patches_polish_experiments(tmp_path: Path) -> 
     assert all(not Path(path).is_absolute() for path in artifacts.values())
 
 
+def test_reloaded_experiment_variant_can_be_repolished_and_used_for_feedback(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    assert run_response.status_code == 200, run_response.text
+    run_payload = cast(dict[str, Any], run_response.json())
+    run_id = cast(str, run_payload["run_id"])
+    parent_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+    follower_bar = _first_pitched_bar(parent_candidate, role="follower")
+
+    first_polish_response = client.post(
+        f"/api/runs/{run_id}/candidates/{candidate_id}/polish",
+        json={
+            "bar_start": follower_bar,
+            "bar_end": follower_bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "max_variants": 1,
+        },
+    )
+    assert first_polish_response.status_code == 200, first_polish_response.text
+    first_payload = cast(dict[str, Any], first_polish_response.json())
+    variant = cast(list[dict[str, Any]], first_payload["candidates"])[0]
+    variant_id = cast(str, variant["candidate_id"])
+    variant_bar = _first_pitched_bar(variant, role="follower")
+
+    reloaded_client = TestClient(create_app(output_root=tmp_path))
+    second_polish_response = reloaded_client.post(
+        f"/api/runs/{run_id}/candidates/{variant_id}/polish",
+        json={
+            "bar_start": variant_bar,
+            "bar_end": variant_bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "max_variants": 1,
+        },
+    )
+    feedback_response = reloaded_client.post(
+        f"/api/runs/{run_id}/feedback/translate",
+        json={"text": "bass too static", "candidate_id": variant_id},
+    )
+    candidate_response = reloaded_client.get(f"/api/runs/{run_id}/candidates/{variant_id}")
+
+    assert second_polish_response.status_code == 200, second_polish_response.text
+    assert feedback_response.status_code == 200, feedback_response.text
+    assert candidate_response.status_code == 200, candidate_response.text
+    second_payload = cast(dict[str, Any], second_polish_response.json())
+    feedback_payload = cast(dict[str, Any], feedback_response.json())
+    candidate_payload = cast(dict[str, Any], candidate_response.json())
+    assert cast(dict[str, Any], second_payload["summary"])["parent_candidate_id"] == variant_id
+    assert feedback_payload["candidate_id"] == variant_id
+    assert candidate_payload["candidate_id"] == variant_id
+    assert cast(dict[str, Any], candidate_payload["metadata"])["source_kind"] == "experiment"
+
+
+def test_follow_up_acceptance_path_reuses_variant_and_analysis_action(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    assert run_response.status_code == 200, run_response.text
+    run_payload = cast(dict[str, Any], run_response.json())
+    run_id = cast(str, run_payload["run_id"])
+    base_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    base_candidate_id = cast(str, base_candidate["candidate_id"])
+    follower_bar = _first_pitched_bar(base_candidate, role="follower")
+
+    first_polish = client.post(
+        f"/api/runs/{run_id}/candidates/{base_candidate_id}/polish",
+        json={
+            "bar_start": follower_bar,
+            "bar_end": follower_bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "max_variants": 1,
+        },
+    )
+    assert first_polish.status_code == 200, first_polish.text
+    persisted_variant = cast(
+        list[dict[str, Any]], cast(dict[str, Any], first_polish.json())["candidates"]
+    )[0]
+    persisted_variant_id = cast(str, persisted_variant["candidate_id"])
+
+    reloaded_client = TestClient(create_app(output_root=tmp_path))
+    reloaded_run = reloaded_client.get(f"/api/runs/{run_id}")
+    reloaded_experiments = reloaded_client.get(f"/api/runs/{run_id}/experiments")
+    assert reloaded_run.status_code == 200, reloaded_run.text
+    assert reloaded_experiments.status_code == 200, reloaded_experiments.text
+
+    fixed_voice = reloaded_client.post(
+        f"/api/runs/{run_id}/candidates/{persisted_variant_id}/polish",
+        json={
+            "bar_start": follower_bar,
+            "bar_end": follower_bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "search_mode": "rewrite_selected_voice",
+            "objective_preset": "smooth_bass",
+            "max_variants": 1,
+        },
+    )
+    assert fixed_voice.status_code == 200, fixed_voice.text
+    fixed_voice_payload = cast(dict[str, Any], fixed_voice.json())
+    invention_variant = cast(list[dict[str, Any]], fixed_voice_payload["candidates"])[0]
+    invention_variant_id = cast(str, invention_variant["candidate_id"])
+    invention_metadata = cast(dict[str, Any], invention_variant["metadata"])
+    objective = cast(dict[str, Any], invention_metadata["polish_objective"])
+    assert "bass_root_support_reward" in cast(dict[str, Any], objective["components"])
+
+    analysis_request = _analysis_polish_request(invention_variant)
+    analysis_polish = reloaded_client.post(
+        f"/api/runs/{run_id}/candidates/{invention_variant_id}/polish",
+        json=analysis_request,
+    )
+    base_payload = reloaded_client.get(f"/api/runs/{run_id}/candidates/{base_candidate_id}")
+    derived_payload = reloaded_client.get(f"/api/runs/{run_id}/candidates/{invention_variant_id}")
+
+    assert analysis_polish.status_code == 200, analysis_polish.text
+    assert base_payload.status_code == 200, base_payload.text
+    assert derived_payload.status_code == 200, derived_payload.text
+    assert cast(dict[str, Any], derived_payload.json())["candidate_id"] == invention_variant_id
+
+
 def test_feedback_translation_endpoint_returns_structured_actions(tmp_path: Path) -> None:
     client = TestClient(create_app(output_root=tmp_path))
 
@@ -282,6 +421,41 @@ def _first_pitched_bar(candidate: dict[str, Any], *, role: str) -> int:
         if note["role"] == role and note["pitch"] is not None:
             return cast(int, note["bar"])
     raise AssertionError(f"candidate has no pitched {role} note")
+
+
+def _analysis_polish_request(candidate: dict[str, Any]) -> dict[str, object]:
+    analysis = cast(dict[str, Any], candidate["analysis"])
+    phrases = cast(list[dict[str, Any]], analysis["phrases"])
+    warning_phrase = next(
+        (phrase for phrase in phrases if cast(list[object], phrase["warnings"])),
+        None,
+    )
+    if warning_phrase is not None:
+        return {
+            "bar_start": warning_phrase["bar_start"],
+            "bar_end": warning_phrase["bar_end"],
+            "objective_preset": "reduce_repetition",
+            "max_variants": 1,
+        }
+    cadences = cast(list[dict[str, Any]], analysis["cadences"])
+    if not cadences:
+        bass = cast(dict[str, Any], analysis["bass_support"])
+        return {
+            "bar_start": bass["bar_start"],
+            "bar_end": bass["bar_end"],
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "search_mode": "rewrite_selected_voice",
+            "objective_preset": "smooth_bass",
+            "max_variants": 1,
+        }
+    cadence = cadences[-1]
+    return {
+        "bar_start": max(1, cast(int, cadence["bar"]) - 1),
+        "bar_end": cadence["bar"],
+        "objective_preset": "strengthen_cadence",
+        "max_variants": 1,
+    }
 
 
 def test_run_upload_rejects_unsupported_suffix(tmp_path: Path) -> None:
