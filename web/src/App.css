@@ -256,6 +256,22 @@
   font-size: 13px;
 }
 
+.compare-view {
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.compare-table {
+  font-size: 13px;
+}
+
+.compare-heading {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
 .breakdown-table tr[data-selected='true'] {
   background: #eef7f9;
 }

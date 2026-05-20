@@ -16,6 +16,7 @@ import type { Experiment } from '../api/schemas'
 import { listExperiments } from '../api/runs'
 import { CandidateLabPanel } from './CandidateLabPanel'
 import { CandidateTable } from './CandidateTable'
+import { CompareView } from './CompareView'
 import { ExportMenu } from './ExportMenu'
 import { MusicalityBreakdown } from './MusicalityBreakdown'
 import { PianoRollView } from './PianoRollView'
@@ -36,6 +37,7 @@ export function KithaironAppShell() {
   const [violationCategoryFilter, setViolationCategoryFilter] = useState('all')
   const [activePlaybackEventIds, setActivePlaybackEventIds] = useState<string[]>([])
   const [experiments, setExperiments] = useState<Experiment[]>([])
+  const [compareCandidateIds, setCompareCandidateIds] = useState<string[]>([])
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
@@ -56,6 +58,14 @@ export function KithaironAppShell() {
       ) ?? null,
     [selectedCandidate, selectedRepairActionId],
   )
+  const compareCandidates = useMemo(
+    () =>
+      compareCandidateIds
+        .map((candidateId) => candidates.find((candidate) => candidate.candidate_id === candidateId))
+        .filter((candidate): candidate is CandidateViz => candidate !== undefined)
+        .slice(0, 2),
+    [candidates, compareCandidateIds],
+  )
   const highlightedEventIds = uniqueEventIds([
     ...(selectedViolation?.event_ids ?? (selectedEventId === null ? [] : [selectedEventId])),
     ...repairActionEventIds(selectedRepairAction),
@@ -74,6 +84,7 @@ export function KithaironAppShell() {
     setViolationCategoryFilter('all')
     setActivePlaybackEventIds([])
     setExperiments([])
+    setCompareCandidateIds([])
     void listExperiments(nextRunSummary.run_id).then(setExperiments).catch(() => setExperiments([]))
   }
 
@@ -111,6 +122,15 @@ export function KithaironAppShell() {
         experiment,
       ])
     }
+  }
+
+  function handleToggleCompareCandidate(candidateId: string) {
+    setCompareCandidateIds((current) => {
+      if (current.includes(candidateId)) {
+        return current.filter((id) => id !== candidateId)
+      }
+      return [...current.slice(-1), candidateId]
+    })
   }
 
   function handleCandidateSelect(candidateId: string) {
@@ -181,7 +201,9 @@ export function KithaironAppShell() {
             <CandidateTable
               candidates={candidates}
               selectedCandidateId={selectedCandidateId}
+              compareCandidateIds={compareCandidateIds}
               onSelectCandidate={handleCandidateSelect}
+              onToggleCompareCandidate={handleToggleCompareCandidate}
             />
           </Paper>
           <Paper className="candidate-surface" p="md">
@@ -261,6 +283,15 @@ export function KithaironAppShell() {
                 </Text>
               ) : null}
             </Paper>
+            {compareCandidates.length > 0 ? (
+              <Paper className="score-surface" p="md">
+                <CompareView
+                  runSummary={runSummary}
+                  candidates={compareCandidates}
+                  onClear={() => setCompareCandidateIds([])}
+                />
+              </Paper>
+            ) : null}
           </Stack>
           <Paper className="inspector-surface" mih={596} p="md">
             <Text className="surface-title">Inspector</Text>

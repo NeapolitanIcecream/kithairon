@@ -39,19 +39,24 @@ describe('CandidateTable', () => {
 
   it('selects a candidate by its stable candidate id', async () => {
     const onSelectCandidate = vi.fn()
+    const onToggleCompareCandidate = vi.fn()
     render(
       <MantineProvider>
         <CandidateTable
           candidates={[candidate('strict_0001'), candidate('repair_0002')]}
           selectedCandidateId="strict_0001"
+          compareCandidateIds={['repair_0002']}
           onSelectCandidate={onSelectCandidate}
+          onToggleCompareCandidate={onToggleCompareCandidate}
         />
       </MantineProvider>,
     )
 
     await userEvent.click(screen.getByLabelText('Select Candidate 2'))
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
 
     expect(onSelectCandidate).toHaveBeenCalledWith('repair_0002')
+    expect(onToggleCompareCandidate).toHaveBeenCalledWith('repair_0002')
     expect(screen.getAllByText('70.0')[0]).toBeTruthy()
   })
 })

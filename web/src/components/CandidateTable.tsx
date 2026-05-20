@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import {
   Alert,
   Badge,
+  Button,
   Group,
   ScrollArea,
   Table,
@@ -13,13 +14,17 @@ import type { CandidateViz } from '../api/schemas'
 type CandidateTableProps = {
   candidates: CandidateViz[]
   selectedCandidateId: string | null
+  compareCandidateIds?: string[]
   onSelectCandidate: (candidateId: string) => void
+  onToggleCompareCandidate?: (candidateId: string) => void
 }
 
 export function CandidateTable({
   candidates,
   selectedCandidateId,
+  compareCandidateIds = [],
   onSelectCandidate,
+  onToggleCompareCandidate,
 }: CandidateTableProps) {
   if (candidates.length === 0) {
     return (
@@ -43,6 +48,7 @@ export function CandidateTable({
             <Table.Th>Delay</Table.Th>
             <Table.Th>Interval</Table.Th>
             <Table.Th>Main issue</Table.Th>
+            <Table.Th>Compare</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -84,6 +90,17 @@ export function CandidateTable({
                   <Text size="sm" lineClamp={2}>
                     {mainIssue(candidate)}
                   </Text>
+                </Table.Td>
+                <Table.Td>
+                  {onToggleCompareCandidate === undefined ? null : (
+                    <Button
+                      variant={compareCandidateIds.includes(candidate.candidate_id) ? 'filled' : 'light'}
+                      size="compact-sm"
+                      onClick={() => onToggleCompareCandidate(candidate.candidate_id)}
+                    >
+                      {compareCandidateIds.includes(candidate.candidate_id) ? 'Remove' : 'Compare'}
+                    </Button>
+                  )}
                 </Table.Td>
               </Table.Tr>
             )
