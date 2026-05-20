@@ -65,3 +65,7 @@ class GenerationError(KithaironError):
 
 class OutputError(KithaironError):
     """Raised when artifact output paths cannot be prepared."""
+
+
+class PolishError(KithaironError):
+    """Raised when a local phrase polish request cannot be completed."""

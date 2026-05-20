@@ -64,7 +64,10 @@ def materialize_candidate(
         ],
         repair_actions=repair_actions,
         artifacts=artifact_urls,
-        metadata=_jsonable_mapping(candidate.metadata, exclude={"outputs", "score_breakdown"}),
+        metadata={
+            **_jsonable_mapping(candidate.metadata, exclude={"outputs", "score_breakdown"}),
+            "time_signature": candidate.voices[0].melody.time_signature,
+        },
     )
 
 
