@@ -40,8 +40,7 @@ def summarize_cadence(context: AnalysisContext) -> CadenceSummary | None:
     upper_motion = _voice_motion(previous, final, final.upper_voice)
     strength = _cadence_strength(final, bass_motion)
     event_ids = tuple(
-        f"{voice_name}:{event_id}"
-        for voice_name, event_id in sorted(final.event_ids.items())
+        f"{voice_name}:{event_id}" for voice_name, event_id in sorted(final.event_ids.items())
     )
     return CadenceSummary(
         cadence_id="final-cadence",

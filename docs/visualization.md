@@ -56,9 +56,24 @@ The candidate view shows:
 - Piano-roll note lanes with bar and beat grid lines.
 - Playback controls and active-note highlighting.
 - Score breakdown by category and rule.
+- Musicality and composition analysis for phrase spans, cadence strength, and bass motion.
 - Violation filters and linked piano-roll highlighting.
 - Repair or solver actions for relaxed candidates.
 - Download and render controls.
+
+## Use composition assistance
+
+Use `Phrase Polish` to search local variants for the selected candidate. Choose a bar range, a preset, and a mode:
+
+- `Local polish` keeps the existing lock/rewrite controls.
+- `Rewrite lower under fixed upper` keeps the leader fixed and searches a new follower line.
+- `Rewrite upper above fixed lower` keeps the follower fixed and searches a new leader line.
+
+The polish result is added to the candidate list and stored as an experiment in `Candidate Lab`.
+
+Use `Feedback` when you want to start from plain text instead of choosing objective weights. Examples such as `cadence weak`, `bass too static`, `too repetitive`, and `too many leaps` translate into structured polish actions. Review the suggested action, then run it to create variants from the selected candidate.
+
+Use the `Analysis` panel in the inspector to check the current candidate before and after edits. It shows phrase spans, the final cadence summary, and whether the lower voice is static, stepwise, or active.
 
 ## Download artifacts
 

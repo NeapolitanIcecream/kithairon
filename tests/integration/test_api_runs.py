@@ -206,10 +206,7 @@ def test_feedback_translation_endpoint_returns_structured_actions(tmp_path: Path
     assert response.status_code == 200, response.text
     payload = cast(dict[str, Any], response.json())
     actions = cast(list[dict[str, Any]], payload["actions"])
-    presets = [
-        cast(dict[str, Any], action["request"])["objective_preset"]
-        for action in actions
-    ]
+    presets = [cast(dict[str, Any], action["request"])["objective_preset"] for action in actions]
     target = cast(dict[str, Any], payload["target"])
     assert payload["candidate_id"] == candidate_id
     assert payload["intents"] == ["too_mechanical", "cadence_weak"]

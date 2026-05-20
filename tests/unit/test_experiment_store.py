@@ -49,9 +49,10 @@ def test_experiment_store_persists_variants_notes_and_relative_artifacts(tmp_pat
     )
     assert set(stored_artifacts) == {"musicxml", "midi"}
     assert all(not Path(path).is_absolute() for path in stored_artifacts.values())
-    assert artifact_index["candidates"][candidate.candidate_id]["musicxml"] == stored_artifacts[
-        "musicxml"
-    ]
+    assert (
+        artifact_index["candidates"][candidate.candidate_id]["musicxml"]
+        == stored_artifacts["musicxml"]
+    )
 
 
 def _candidate(candidate_id: str) -> CanonCandidate:

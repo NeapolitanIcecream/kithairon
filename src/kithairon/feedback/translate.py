@@ -43,8 +43,7 @@ def _detect_intents(text: str) -> list[FeedbackIntent]:
     if any(token in normalized for token in ("repetitive", "repeat", "same note", "重复")):
         intents.append("too_repetitive")
     if any(
-        token in normalized
-        for token in ("bass too static", "static bass", "bass static", "低音")
+        token in normalized for token in ("bass too static", "static bass", "bass static", "低音")
     ):
         intents.append("bass_too_static")
     if any(token in normalized for token in ("cadence weak", "weak cadence", "cadence", "终止")):
