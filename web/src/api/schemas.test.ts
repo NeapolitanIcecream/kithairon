@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PolishResultSchema, RunSummarySchema } from './schemas'
+import { FeedbackTranslationSchema, PolishResultSchema, RunSummarySchema } from './schemas'
 
 describe('RunSummarySchema', () => {
   it('validates the visualization payload contract', () => {
@@ -157,5 +157,36 @@ describe('PolishResultSchema', () => {
     const result = PolishResultSchema.parse(payload)
     expect(result.summary.returned_variants).toBe(1)
     expect(result.experiment?.experiment_id).toBe('experiment-0001')
+  })
+})
+
+describe('FeedbackTranslationSchema', () => {
+  it('validates deterministic feedback actions', () => {
+    const payload = {
+      input_text: 'bass too static',
+      candidate_id: 'strict_0001',
+      intents: ['bass_too_static'],
+      target: { bar_start: 1, bar_end: 2 },
+      actions: [
+        {
+          action_id: 'feedback-action-01',
+          label: 'Rewrite lower support',
+          reason: 'Mapped feedback intent bass_too_static.',
+          request: {
+            bar_start: 1,
+            bar_end: 2,
+            lock_voice: 'leader',
+            rewrite_voice: 'follower',
+            max_variants: 6,
+            objective_preset: 'smooth_bass',
+            objective_overrides: { bass_smoothness_penalty: 2.5 },
+          },
+        },
+      ],
+      explanation: 'Recognized feedback intents: bass_too_static',
+    }
+
+    const translation = FeedbackTranslationSchema.parse(payload)
+    expect(translation.actions[0].request.rewrite_voice).toBe('follower')
   })
 })

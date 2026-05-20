@@ -18,6 +18,7 @@ import { CandidateLabPanel } from './CandidateLabPanel'
 import { CandidateTable } from './CandidateTable'
 import { CompareView } from './CompareView'
 import { ExportMenu } from './ExportMenu'
+import { FeedbackPanel } from './FeedbackPanel'
 import { MusicalityBreakdown } from './MusicalityBreakdown'
 import { PianoRollView } from './PianoRollView'
 import { PlaybackControls } from './PlaybackControls'
@@ -216,6 +217,16 @@ export function KithaironAppShell() {
               selectedCandidateId={selectedCandidateId}
               selectedCandidate={selectedCandidate}
               onSelectCandidate={handleCandidateSelect}
+              onVariantsReceived={handlePolishVariants}
+            />
+          </Paper>
+          <Paper className="candidate-surface" p="md">
+            <Text className="surface-title" mb="sm">
+              Feedback
+            </Text>
+            <FeedbackPanel
+              runSummary={runSummary}
+              selectedCandidate={selectedCandidate}
               onVariantsReceived={handlePolishVariants}
             />
           </Paper>

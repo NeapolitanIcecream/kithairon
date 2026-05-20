@@ -180,6 +180,65 @@ def test_experiment_api_lists_and_patches_polish_experiments(tmp_path: Path) -> 
     assert all(not Path(path).is_absolute() for path in artifacts.values())
 
 
+def test_feedback_translation_endpoint_returns_structured_actions(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    run_payload = cast(dict[str, Any], run_response.json())
+    run_id = cast(str, run_payload["run_id"])
+    parent_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+
+    response = client.post(
+        f"/api/runs/{run_id}/feedback/translate",
+        json={
+            "text": "too mechanical, cadence weak",
+            "candidate_id": candidate_id,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = cast(dict[str, Any], response.json())
+    actions = cast(list[dict[str, Any]], payload["actions"])
+    presets = [
+        cast(dict[str, Any], action["request"])["objective_preset"]
+        for action in actions
+    ]
+    target = cast(dict[str, Any], payload["target"])
+    assert payload["candidate_id"] == candidate_id
+    assert payload["intents"] == ["too_mechanical", "cadence_weak"]
+    assert "strengthen_cadence" in presets
+    assert target["bar_start"] <= target["bar_end"]
+    assert all("request" in action for action in actions)
+
+
+def test_feedback_translation_endpoint_reports_missing_candidate(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    run_id = cast(str, cast(dict[str, Any], run_response.json())["run_id"])
+
+    response = client.post(
+        f"/api/runs/{run_id}/feedback/translate",
+        json={"text": "cadence weak", "candidate_id": "missing"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "feedback_candidate_not_found"
+
+
 def _first_pitched_bar(candidate: dict[str, Any], *, role: str) -> int:
     for note in cast(list[dict[str, Any]], candidate["notes"]):
         if note["role"] == role and note["pitch"] is not None:

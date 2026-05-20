@@ -196,6 +196,36 @@ export const PolishResultSchema = z.object({
   experiment: ExperimentSchema.nullable().optional(),
 })
 
+export const FeedbackIntentSchema = z.enum([
+  'too_mechanical',
+  'too_repetitive',
+  'bass_too_static',
+  'cadence_weak',
+  'melody_too_jumpy',
+  'voices_too_rhythmically_similar',
+])
+
+export const FeedbackTargetSchema = z.object({
+  bar_start: z.number().int().nullable().optional(),
+  bar_end: z.number().int().nullable().optional(),
+})
+
+export const SuggestedPolishActionSchema = z.object({
+  action_id: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  request: PolishRequestSchema,
+})
+
+export const FeedbackTranslationSchema = z.object({
+  input_text: z.string(),
+  candidate_id: z.string().nullable(),
+  intents: z.array(FeedbackIntentSchema),
+  target: FeedbackTargetSchema,
+  actions: z.array(SuggestedPolishActionSchema),
+  explanation: z.string(),
+})
+
 export type Rational = z.infer<typeof RationalSchema>
 export type NoteViz = z.infer<typeof NoteVizSchema>
 export type ViolationViz = z.infer<typeof ViolationVizSchema>
@@ -216,3 +246,7 @@ export type ExperimentVariantStatus = z.infer<typeof ExperimentVariantStatusSche
 export type ExperimentVariant = z.infer<typeof ExperimentVariantSchema>
 export type Experiment = z.infer<typeof ExperimentSchema>
 export type PolishResult = z.infer<typeof PolishResultSchema>
+export type FeedbackIntent = z.infer<typeof FeedbackIntentSchema>
+export type FeedbackTarget = z.infer<typeof FeedbackTargetSchema>
+export type SuggestedPolishAction = z.infer<typeof SuggestedPolishActionSchema>
+export type FeedbackTranslation = z.infer<typeof FeedbackTranslationSchema>

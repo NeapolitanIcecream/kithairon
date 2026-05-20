@@ -21,13 +21,19 @@ from kithairon.config import (
 )
 from kithairon.errors import Diagnostic, KithaironError
 from kithairon.experiments import create_experiment, list_experiments, patch_experiment
+from kithairon.feedback import FeedbackTranslateRequest, translate_feedback
 from kithairon.pipeline import run_generation
 from kithairon.polish import PolishRequest, polish_run_candidate
+from kithairon.polish.run_io import load_run_summary
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
 )
 from kithairon.visualization.export_score import RenderFormat
-from kithairon.visualization.models import ExperimentCreateDTO, ExperimentPatchDTO
+from kithairon.visualization.models import (
+    CandidateVizDTO,
+    ExperimentCreateDTO,
+    ExperimentPatchDTO,
+)
 
 console = Console()
 ALLOWED_UPLOAD_SUFFIXES = {".mid", ".midi", ".musicxml", ".xml", ".mxl"}
@@ -249,6 +255,11 @@ def _register_routes(app: Any, settings: ApiSettings) -> None:
         _patch_experiment_endpoint(settings),
         methods=["PATCH"],
     )
+    app.add_api_route(
+        "/api/runs/{run_id}/feedback/translate",
+        _translate_feedback_endpoint(settings),
+        methods=["POST"],
+    )
     register_artifact_routes(app, settings)
 
 
@@ -381,6 +392,36 @@ def _patch_experiment_endpoint(settings: ApiSettings) -> Any:
         return experiment.model_dump(mode="json")
 
     return patch_run_experiment
+
+
+def _translate_feedback_endpoint(settings: ApiSettings) -> Any:
+    def translate_run_feedback(
+        run_id: str,
+        request: FeedbackTranslateRequest,
+    ) -> dict[str, object]:
+        current_run = load_run_summary(run_dir(settings, run_id))
+        candidate = _feedback_candidate(current_run.candidates, request.candidate_id)
+        translation = translate_feedback(request, candidate=candidate)
+        return translation.model_dump(mode="json")
+
+    return translate_run_feedback
+
+
+def _feedback_candidate(
+    candidates: list[CandidateVizDTO],
+    candidate_id: str | None,
+) -> CandidateVizDTO | None:
+    if candidate_id is None:
+        return candidates[0] if candidates else None
+    for candidate in candidates:
+        if candidate.candidate_id == candidate_id:
+            return candidate
+    raise ApiError(
+        "Candidate was not found in this run.",
+        code="feedback_candidate_not_found",
+        status_code=404,
+        details={"candidate_id": candidate_id},
+    )
 
 
 def _mount_frontend(app: Any, settings: ApiSettings) -> None:

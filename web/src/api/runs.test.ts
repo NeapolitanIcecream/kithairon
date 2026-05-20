@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { listExperiments, patchExperiment, polishCandidate, uploadRun } from './runs'
+import {
+  listExperiments,
+  patchExperiment,
+  polishCandidate,
+  translateFeedback,
+  uploadRun,
+} from './runs'
 
 const runSummaryPayload = {
   run_id: 'run-1',
@@ -202,6 +208,63 @@ describe('experiment API', () => {
     expect(JSON.parse(patchCall[1].body as string)).toEqual({
       notes: 'keeper',
       variant_status: { strict_0001_polish_001: 'kept' },
+    })
+  })
+})
+
+describe('translateFeedback', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('posts feedback text and validates suggested polish actions', async () => {
+    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+      return new Response(
+        JSON.stringify({
+          input_text: 'cadence weak',
+          candidate_id: 'strict_0001',
+          intents: ['cadence_weak'],
+          target: { bar_start: 3, bar_end: 4 },
+          actions: [
+            {
+              action_id: 'feedback-action-01',
+              label: 'Strengthen cadence',
+              reason: 'Mapped feedback intent cadence_weak.',
+              request: {
+                bar_start: 3,
+                bar_end: 4,
+                lock_voice: 'none',
+                rewrite_voice: 'auto',
+                max_variants: 6,
+                objective_preset: 'strengthen_cadence',
+                objective_overrides: { cadence_motion_reward: 2.5 },
+              },
+            },
+          ],
+          explanation: 'Recognized feedback intents: cadence_weak',
+        }),
+        {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        },
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await translateFeedback('run-1', {
+      text: 'cadence weak',
+      candidateId: 'strict_0001',
+      barStart: 3,
+      barEnd: 4,
+    })
+
+    expect(result.actions[0].request.objective_preset).toBe('strengthen_cadence')
+    const call = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(call[0]).toBe('/api/runs/run-1/feedback/translate')
+    expect(JSON.parse(call[1].body as string)).toEqual({
+      text: 'cadence weak',
+      candidate_id: 'strict_0001',
+      target: { bar_start: 3, bar_end: 4 },
     })
   })
 })

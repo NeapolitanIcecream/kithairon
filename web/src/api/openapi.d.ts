@@ -209,6 +209,23 @@ export interface paths {
         patch: operations["patch_run_experiment_api_runs__run_id__experiments__experiment_id__patch"];
         trace?: never;
     };
+    "/api/runs/{run_id}/feedback/translate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Translate Run Feedback */
+        post: operations["translate_run_feedback_api_runs__run_id__feedback_translate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs/{run_id}/visualization": {
         parameters: {
             query?: never;
@@ -280,6 +297,21 @@ export interface components {
         };
         /** @enum {string} */
         ExperimentVariantStatusDTO: "undecided" | "kept" | "rejected";
+        /** FeedbackTarget */
+        FeedbackTarget: {
+            /** Bar End */
+            bar_end?: number | null;
+            /** Bar Start */
+            bar_start?: number | null;
+        };
+        /** FeedbackTranslateRequest */
+        FeedbackTranslateRequest: {
+            /** Candidate Id */
+            candidate_id?: string | null;
+            target?: components["schemas"]["FeedbackTarget"];
+            /** Text */
+            text: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -909,6 +941,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ExperimentPatchDTO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    translate_run_feedback_api_runs__run_id__feedback_translate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackTranslateRequest"];
             };
         };
         responses: {

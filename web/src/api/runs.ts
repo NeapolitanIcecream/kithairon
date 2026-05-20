@@ -1,10 +1,12 @@
 import { apiFetch, type ApiClientOptions } from './client'
 import {
+  FeedbackTranslationSchema,
   PolishResultSchema,
   ExperimentSchema,
   RunSummarySchema,
   type Experiment,
   type ExperimentVariantStatus,
+  type FeedbackTranslation,
   type LockVoice,
   type ObjectivePreset,
   type PolishObjectiveWeights,
@@ -42,6 +44,13 @@ export type PolishCandidateOptions = {
 export type PatchExperimentOptions = {
   notes?: string
   variantStatus?: Record<string, ExperimentVariantStatus>
+}
+
+export type TranslateFeedbackOptions = {
+  text: string
+  candidateId?: string
+  barStart?: number
+  barEnd?: number
 }
 
 export async function uploadRun(
@@ -129,6 +138,34 @@ export async function patchExperiment(
     clientOptions,
   )
   return ExperimentSchema.parse(payload)
+}
+
+export async function translateFeedback(
+  runId: string,
+  options: TranslateFeedbackOptions,
+  clientOptions?: ApiClientOptions,
+): Promise<FeedbackTranslation> {
+  const target: { bar_start?: number; bar_end?: number } = {}
+  if (options.barStart !== undefined) {
+    target.bar_start = options.barStart
+  }
+  if (options.barEnd !== undefined) {
+    target.bar_end = options.barEnd
+  }
+  const payload = await apiFetch<unknown>(
+    `/api/runs/${encodeURIComponent(runId)}/feedback/translate`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text: options.text,
+        candidate_id: options.candidateId,
+        target,
+      }),
+    },
+    clientOptions,
+  )
+  return FeedbackTranslationSchema.parse(payload)
 }
 
 function appendOptional(form: FormData, key: string, value: string | number | undefined) {
