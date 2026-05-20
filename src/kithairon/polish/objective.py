@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from itertools import pairwise
 
+from kithairon.analysis.composition import CompositionAnalysis, analyze_composition
 from kithairon.analysis.timeline import TimeSignatureInfo, parse_time_signature
 from kithairon.ir import CanonCandidate, NoteEvent, VoiceRole
 from kithairon.polish.models import ObjectivePreset, PolishObjectiveWeights, PolishRequest
@@ -52,6 +53,7 @@ def evaluate_objective(
     request: PolishRequest,
     *,
     rewrite_role: VoiceRole,
+    parent: CanonCandidate | None = None,
 ) -> ObjectiveEvaluation:
     """Return a bounded musical-shape adjustment for ranking local variants."""
     weights = effective_weights(request.objective_preset, request.objective_overrides)
@@ -62,6 +64,26 @@ def evaluate_objective(
         "bass_smoothness_penalty": -0.3 * _bass_leap_pressure(events, rewrite_role),
         "cadence_motion_reward": 1.8 * _cadence_motion_value(events),
     }
+    if request.search_mode == "rewrite_selected_voice" and parent is not None:
+        if rewrite_role == "follower":
+            components.update(_lower_invention_components(parent, candidate, request))
+            weights = {
+                **weights,
+                "bass_root_support_reward": 5.0,
+                "bass_foundation_reward": 2.0,
+                "bass_independence_reward": 3.0,
+                "static_bass_penalty": 1.6,
+                "cadence_support_reward": 1.4,
+            }
+        elif rewrite_role == "leader":
+            components.update(_upper_invention_components(parent, candidate, request, events))
+            weights = {
+                **weights,
+                "phrase_warning_reduction_reward": 5.0,
+                "plateau_reduction_reward": 3.0,
+                "contour_variety_reward": 1.6,
+                "cadence_clarity_reward": 1.6,
+            }
     total = sum(components[name] * weights[name] for name in components)
     return ObjectiveEvaluation(
         total=round(total, 4),
@@ -135,3 +157,102 @@ def _cadence_motion_value(events: tuple[NoteEvent, ...]) -> float:
     if interval in {3, 4, 5}:
         return 0.4
     return 0.0
+
+
+def _lower_invention_components(
+    parent: CanonCandidate,
+    candidate: CanonCandidate,
+    request: PolishRequest,
+) -> dict[str, float]:
+    parent_analysis = analyze_composition(parent)
+    candidate_analysis = analyze_composition(candidate)
+    parent_bass = parent_analysis.bass_support
+    candidate_bass = candidate_analysis.bass_support
+    if parent_bass is None or candidate_bass is None:
+        return {
+            "bass_root_support_reward": 0.0,
+            "bass_foundation_reward": 0.0,
+            "bass_independence_reward": 0.0,
+            "static_bass_penalty": 0.0,
+            "cadence_support_reward": 0.0,
+        }
+    return {
+        "bass_root_support_reward": 4.0
+        * (candidate_bass.root_support_proxy - parent_bass.root_support_proxy),
+        "bass_foundation_reward": 3.0
+        * (candidate_bass.sustained_foundation_score - parent_bass.sustained_foundation_score),
+        "bass_independence_reward": 3.0
+        * (candidate_bass.bass_independence_score - parent_bass.bass_independence_score),
+        "static_bass_penalty": -float(
+            sum(
+                1
+                for bar in candidate_bass.static_bars
+                if request.bar_start <= bar <= request.bar_end
+            )
+        ),
+        "cadence_support_reward": _cadence_value(candidate_analysis, request)
+        - _cadence_value(parent_analysis, request),
+    }
+
+
+def _upper_invention_components(
+    parent: CanonCandidate,
+    candidate: CanonCandidate,
+    request: PolishRequest,
+    events: tuple[NoteEvent, ...],
+) -> dict[str, float]:
+    parent_analysis = analyze_composition(parent)
+    candidate_analysis = analyze_composition(candidate)
+    return {
+        "phrase_warning_reduction_reward": float(
+            _phrase_warning_count(parent_analysis, request)
+            - _phrase_warning_count(candidate_analysis, request)
+        ),
+        "plateau_reduction_reward": float(
+            _plateau_count(parent_analysis, request) - _plateau_count(candidate_analysis, request)
+        ),
+        "contour_variety_reward": _contour_variety(events),
+        "cadence_clarity_reward": _cadence_value(candidate_analysis, request)
+        - _cadence_value(parent_analysis, request),
+    }
+
+
+def _phrase_warning_count(analysis: CompositionAnalysis, request: PolishRequest) -> int:
+    return sum(
+        len(phrase.warnings)
+        for phrase in analysis.phrases
+        if _bars_overlap(phrase.bar_start, phrase.bar_end, request)
+    )
+
+
+def _plateau_count(analysis: CompositionAnalysis, request: PolishRequest) -> int:
+    return sum(
+        len(phrase.repeated_note_plateaus)
+        for phrase in analysis.phrases
+        if _bars_overlap(phrase.bar_start, phrase.bar_end, request)
+    )
+
+
+def _cadence_value(analysis: CompositionAnalysis, request: PolishRequest) -> float:
+    candidates = [
+        cadence
+        for cadence in analysis.cadences
+        if request.bar_start <= cadence.bar <= request.bar_end
+    ]
+    cadence = candidates[-1] if candidates else analysis.cadence
+    if cadence is None:
+        return 0.0
+    strength_value = {"weak": 0.0, "moderate": 0.5, "strong": 1.0}[cadence.strength]
+    type_bonus = 0.4 if cadence.cadence_type == "authentic_close_tendency" else 0.0
+    return strength_value + type_bonus
+
+
+def _contour_variety(events: tuple[NoteEvent, ...]) -> float:
+    pitches = [event.pitch for event in events if event.pitch is not None]
+    if not pitches:
+        return 0.0
+    return len(set(pitches)) / len(pitches)
+
+
+def _bars_overlap(bar_start: int, bar_end: int, request: PolishRequest) -> bool:
+    return bar_start <= request.bar_end and bar_end >= request.bar_start
