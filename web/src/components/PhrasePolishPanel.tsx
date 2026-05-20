@@ -15,6 +15,7 @@ import { ApiClientError } from '../api/client'
 import { polishCandidate } from '../api/runs'
 import type {
   CandidateViz,
+  Experiment,
   LockVoice,
   ObjectivePreset,
   PolishResult,
@@ -28,7 +29,7 @@ type PhrasePolishPanelProps = {
   selectedCandidateId: string | null
   selectedCandidate: CandidateViz | null
   onSelectCandidate: (candidateId: string) => void
-  onVariantsReceived: (variants: CandidateViz[]) => void
+  onVariantsReceived: (variants: CandidateViz[], experiment: Experiment | null | undefined) => void
 }
 
 const lockVoiceOptions: Array<{ value: LockVoice; label: string }> = [
@@ -95,7 +96,7 @@ export function PhrasePolishPanel({
     },
     onSuccess: (result) => {
       setLastResult(result)
-      onVariantsReceived(result.candidates)
+      onVariantsReceived(result.candidates, result.experiment)
     },
   })
 

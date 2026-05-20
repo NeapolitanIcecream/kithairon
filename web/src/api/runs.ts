@@ -1,7 +1,10 @@
 import { apiFetch, type ApiClientOptions } from './client'
 import {
   PolishResultSchema,
+  ExperimentSchema,
   RunSummarySchema,
+  type Experiment,
+  type ExperimentVariantStatus,
   type LockVoice,
   type ObjectivePreset,
   type PolishObjectiveWeights,
@@ -34,6 +37,11 @@ export type PolishCandidateOptions = {
   maxVariants?: number
   objectivePreset?: ObjectivePreset
   objectiveOverrides?: PolishObjectiveWeights
+}
+
+export type PatchExperimentOptions = {
+  notes?: string
+  variantStatus?: Record<string, ExperimentVariantStatus>
 }
 
 export async function uploadRun(
@@ -88,6 +96,39 @@ export async function polishCandidate(
     clientOptions,
   )
   return PolishResultSchema.parse(payload)
+}
+
+export async function listExperiments(
+  runId: string,
+  clientOptions?: ApiClientOptions,
+): Promise<Experiment[]> {
+  const payload = await apiFetch<unknown>(
+    `/api/runs/${encodeURIComponent(runId)}/experiments`,
+    {},
+    clientOptions,
+  )
+  return ExperimentSchema.array().parse(payload)
+}
+
+export async function patchExperiment(
+  runId: string,
+  experimentId: string,
+  options: PatchExperimentOptions,
+  clientOptions?: ApiClientOptions,
+): Promise<Experiment> {
+  const payload = await apiFetch<unknown>(
+    `/api/runs/${encodeURIComponent(runId)}/experiments/${encodeURIComponent(experimentId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        notes: options.notes,
+        variant_status: options.variantStatus ?? {},
+      }),
+    },
+    clientOptions,
+  )
+  return ExperimentSchema.parse(payload)
 }
 
 function appendOptional(form: FormData, key: string, value: string | number | undefined) {

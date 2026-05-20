@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from kithairon.visualization.models import CandidateVizDTO
+from kithairon.visualization.models import CandidateVizDTO, ExperimentDTO
 
 type LockVoice = Literal["leader", "follower", "none"]
 type RewriteVoice = Literal["leader", "follower", "auto"]
@@ -80,3 +80,4 @@ class PolishResultDTO(PolishModel):
     request: PolishRequest
     summary: PolishSummaryDTO
     candidates: list[CandidateVizDTO]
+    experiment: ExperimentDTO | None = None

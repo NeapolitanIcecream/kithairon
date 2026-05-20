@@ -174,6 +174,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/runs/{run_id}/experiments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Run Experiments */
+        get: operations["list_run_experiments_api_runs__run_id__experiments_get"];
+        put?: never;
+        /** Create Run Experiment */
+        post: operations["create_run_experiment_api_runs__run_id__experiments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/experiments/{experiment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Run Experiment */
+        patch: operations["patch_run_experiment_api_runs__run_id__experiments__experiment_id__patch"];
+        trace?: never;
+    };
     "/api/runs/{run_id}/visualization": {
         parameters: {
             query?: never;
@@ -195,6 +230,56 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CandidateVizDTO */
+        CandidateVizDTO: {
+            /** Artifacts */
+            artifacts?: {
+                [key: string]: string;
+            };
+            /** Candidate Id */
+            candidate_id: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            musicality?: components["schemas"]["MusicalityBreakdownDTO"] | null;
+            /** Notes */
+            notes: components["schemas"]["NoteVizDTO"][];
+            /** Rank */
+            rank: number | null;
+            /** Repair Actions */
+            repair_actions?: components["schemas"]["RepairActionDTO"][];
+            score: components["schemas"]["ScoreBreakdownDTO"];
+            /** Title */
+            title: string;
+            transform: components["schemas"]["TransformVizDTO"];
+            /** Violations */
+            violations: components["schemas"]["ViolationVizDTO"][];
+        };
+        /** @enum {string} */
+        EngineDTO: "strict" | "repair" | "solver" | "auto";
+        /** ExperimentCreateDTO */
+        ExperimentCreateDTO: {
+            /** Candidates */
+            candidates: components["schemas"]["CandidateVizDTO"][];
+            /** Source Candidate Id */
+            source_candidate_id: string;
+            /** Source Request */
+            source_request: {
+                [key: string]: unknown;
+            };
+        };
+        /** ExperimentPatchDTO */
+        ExperimentPatchDTO: {
+            /** Notes */
+            notes?: string | null;
+            /** Variant Status */
+            variant_status?: {
+                [key: string]: components["schemas"]["ExperimentVariantStatusDTO"];
+            };
+        };
+        /** @enum {string} */
+        ExperimentVariantStatusDTO: "undecided" | "kept" | "rejected";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -202,6 +287,73 @@ export interface components {
         };
         /** @enum {string} */
         LockVoice: "leader" | "follower" | "none";
+        /** MusicalityBreakdownDTO */
+        MusicalityBreakdownDTO: {
+            /** Metrics */
+            metrics: components["schemas"]["MusicalityMetricDTO"][];
+            /** Normalized Values */
+            normalized_values?: {
+                [key: string]: number;
+            };
+            /** Raw Values */
+            raw_values?: {
+                [key: string]: number;
+            };
+            /** Total */
+            total: number;
+            /** Weights */
+            weights?: {
+                [key: string]: number;
+            };
+        };
+        /** MusicalityMetricDTO */
+        MusicalityMetricDTO: {
+            /** Higher Is Better */
+            higher_is_better: boolean;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Normalized Value */
+            normalized_value: number;
+            /** Raw Value */
+            raw_value: number;
+            /** Weight */
+            weight: number;
+        };
+        /** @enum {string} */
+        NoteRoleDTO: "leader" | "follower" | "unknown";
+        /** NoteVizDTO */
+        NoteVizDTO: {
+            /** Bar */
+            bar: number | null;
+            beat: components["schemas"]["RationalDTO"] | null;
+            duration_q: components["schemas"]["RationalDTO"];
+            end_q: components["schemas"]["RationalDTO"];
+            /** Event Id */
+            event_id: string;
+            /** Ir Event Id */
+            ir_event_id: string;
+            /** Pitch */
+            pitch: number | null;
+            /** Pitch Name */
+            pitch_name: string | null;
+            /** Repair Action Id */
+            repair_action_id?: string | null;
+            /** @default unknown */
+            role: components["schemas"]["NoteRoleDTO"];
+            /** Score Element Id */
+            score_element_id?: string | null;
+            /** Source Event Id */
+            source_event_id?: string | null;
+            start_q: components["schemas"]["RationalDTO"];
+            /** @default unknown */
+            transform_origin: components["schemas"]["TransformOriginDTO"];
+            /** Velocity */
+            velocity?: number | null;
+            /** Voice Id */
+            voice_id: string;
+        };
         /** @enum {string} */
         ObjectivePreset: "reduce_repetition" | "smooth_bass" | "strengthen_cadence" | "general_polish";
         /** PolishObjectiveWeights */
@@ -234,6 +386,13 @@ export interface components {
             /** @default auto */
             rewrite_voice: components["schemas"]["RewriteVoice"];
         };
+        /** RationalDTO */
+        RationalDTO: {
+            /** Text */
+            text: string;
+            /** Value */
+            value: number;
+        };
         /** @enum {string} */
         RenderFormat: "pdf" | "svg" | "png";
         /** RenderRequest */
@@ -241,8 +400,63 @@ export interface components {
             /** Formats */
             formats: components["schemas"]["RenderFormat"][];
         };
+        /** RepairActionDTO */
+        RepairActionDTO: {
+            /** Action Id */
+            action_id: string;
+            /** Bar */
+            bar?: number | null;
+            beat?: components["schemas"]["RationalDTO"] | null;
+            /** @default unknown */
+            kind: components["schemas"]["RepairActionKindDTO"];
+            /** Message */
+            message: string;
+            /** New Event Id */
+            new_event_id?: string | null;
+            /** Original Event Id */
+            original_event_id?: string | null;
+            start_q?: components["schemas"]["RationalDTO"] | null;
+        };
+        /** @enum {string} */
+        RepairActionKindDTO: "octave_displacement" | "pitch_replacement" | "passing_tone" | "rest_insertion" | "duration_adjustment" | "solver_assignment" | "unknown";
         /** @enum {string} */
         RewriteVoice: "leader" | "follower" | "auto";
+        /** ScoreBreakdownDTO */
+        ScoreBreakdownDTO: {
+            /** Bonuses */
+            bonuses?: {
+                [key: string]: number;
+            };
+            /** By Category */
+            by_category?: {
+                [key: string]: number;
+            };
+            /** By Rule */
+            by_rule?: {
+                [key: string]: number;
+            };
+            /** Total */
+            total: number;
+        };
+        /** @enum {string} */
+        TransformOriginDTO: "input" | "strict_transform" | "repair" | "solver" | "unknown";
+        /** TransformVizDTO */
+        TransformVizDTO: {
+            delay_q?: components["schemas"]["RationalDTO"] | null;
+            engine: components["schemas"]["EngineDTO"];
+            /** Interval */
+            interval?: number | null;
+            /** Inversion Axis */
+            inversion_axis?: number | null;
+            /** Label */
+            label: string;
+            /** Rhythm Scale */
+            rhythm_scale?: string | null;
+            /** Strict Canon */
+            strict_canon: boolean;
+            /** Transform Mode */
+            transform_mode?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -255,6 +469,37 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** @enum {string} */
+        ViolationCategoryDTO: "consonance" | "parallel_motion" | "range" | "crossing" | "melody" | "cadence" | "similarity" | "repair" | "other";
+        /** @enum {string} */
+        ViolationSeverityDTO: "hard" | "soft" | "info";
+        /** ViolationVizDTO */
+        ViolationVizDTO: {
+            /** Bar */
+            bar: number | null;
+            beat: components["schemas"]["RationalDTO"] | null;
+            /** @default other */
+            category: components["schemas"]["ViolationCategoryDTO"];
+            end_q?: components["schemas"]["RationalDTO"] | null;
+            /** Event Ids */
+            event_ids: string[];
+            /** Ir Event Ids */
+            ir_event_ids?: string[];
+            /** Message */
+            message: string;
+            /** Penalty */
+            penalty: number;
+            /** Related Event Ids */
+            related_event_ids?: string[];
+            /** Rule Id */
+            rule_id: string;
+            severity: components["schemas"]["ViolationSeverityDTO"];
+            start_q?: components["schemas"]["RationalDTO"] | null;
+            /** Violation Id */
+            violation_id: string;
+            /** Voice Ids */
+            voice_ids: string[];
         };
     };
     responses: never;
@@ -556,6 +801,114 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_run_experiments_api_runs__run_id__experiments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_run_experiment_api_runs__run_id__experiments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperimentCreateDTO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_run_experiment_api_runs__run_id__experiments__experiment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperimentPatchDTO"];
             };
         };
         responses: {

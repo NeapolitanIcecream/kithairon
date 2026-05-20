@@ -12,6 +12,7 @@ from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformSpec, Voice
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
     build_artifact_index,
+    register_candidate_artifacts,
     resolve_candidate_artifact,
     resolve_run_artifact,
 )
@@ -99,6 +100,27 @@ def test_resolve_artifact_rejects_missing_or_null_candidate_artifact(tmp_path: P
 
     with pytest.raises(ArtifactIndexError, match="Artifact is not registered"):
         resolve_candidate_artifact(index_path, "strict_0001", "pdf")
+
+
+def test_register_candidate_artifacts_adds_safe_relative_paths(tmp_path: Path) -> None:
+    index_path = _write_index(
+        tmp_path,
+        {
+            "run_artifacts": {},
+            "candidates": {},
+        },
+    )
+
+    register_candidate_artifacts(
+        index_path,
+        "strict_0001_polish_001",
+        {"musicxml": "experiments/experiment-0001/candidates/variant.musicxml"},
+    )
+
+    assert (
+        resolve_candidate_artifact(index_path, "strict_0001_polish_001", "musicxml")
+        == tmp_path / "experiments" / "experiment-0001" / "candidates" / "variant.musicxml"
+    )
 
 
 def _write_index(tmp_path: Path, payload: dict[str, object]) -> Path:

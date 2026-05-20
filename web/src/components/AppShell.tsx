@@ -12,6 +12,9 @@ import {
   Title,
 } from '@mantine/core'
 import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
+import type { Experiment } from '../api/schemas'
+import { listExperiments } from '../api/runs'
+import { CandidateLabPanel } from './CandidateLabPanel'
 import { CandidateTable } from './CandidateTable'
 import { ExportMenu } from './ExportMenu'
 import { MusicalityBreakdown } from './MusicalityBreakdown'
@@ -32,6 +35,7 @@ export function KithaironAppShell() {
   const [selectedRepairActionId, setSelectedRepairActionId] = useState<string | null>(null)
   const [violationCategoryFilter, setViolationCategoryFilter] = useState('all')
   const [activePlaybackEventIds, setActivePlaybackEventIds] = useState<string[]>([])
+  const [experiments, setExperiments] = useState<Experiment[]>([])
   const candidates = useMemo(() => runSummary?.candidates ?? [], [runSummary])
   const selectedCandidate = useMemo(
     () =>
@@ -69,9 +73,14 @@ export function KithaironAppShell() {
     setSelectedRepairActionId(null)
     setViolationCategoryFilter('all')
     setActivePlaybackEventIds([])
+    setExperiments([])
+    void listExperiments(nextRunSummary.run_id).then(setExperiments).catch(() => setExperiments([]))
   }
 
-  function handlePolishVariants(variants: CandidateViz[]) {
+  function handlePolishVariants(
+    variants: CandidateViz[],
+    experiment: Experiment | null | undefined,
+  ) {
     if (variants.length === 0) {
       return
     }
@@ -96,6 +105,12 @@ export function KithaironAppShell() {
     setSelectedRepairActionId(null)
     setViolationCategoryFilter('all')
     setActivePlaybackEventIds([])
+    if (experiment !== null && experiment !== undefined) {
+      setExperiments((current) => [
+        ...current.filter((item) => item.experiment_id !== experiment.experiment_id),
+        experiment,
+      ])
+    }
   }
 
   function handleCandidateSelect(candidateId: string) {
@@ -180,6 +195,17 @@ export function KithaironAppShell() {
               selectedCandidate={selectedCandidate}
               onSelectCandidate={handleCandidateSelect}
               onVariantsReceived={handlePolishVariants}
+            />
+          </Paper>
+          <Paper className="candidate-surface" p="md">
+            <Text className="surface-title" mb="sm">
+              Candidate Lab
+            </Text>
+            <CandidateLabPanel
+              runSummary={runSummary}
+              experiments={experiments}
+              onExperimentsChange={setExperiments}
+              onSelectCandidate={handleCandidateSelect}
             />
           </Paper>
         </Stack>

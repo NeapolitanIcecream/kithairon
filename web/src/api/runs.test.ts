@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { polishCandidate, uploadRun } from './runs'
+import { listExperiments, patchExperiment, polishCandidate, uploadRun } from './runs'
 
 const runSummaryPayload = {
   run_id: 'run-1',
@@ -156,6 +156,52 @@ describe('polishCandidate', () => {
       max_variants: 2,
       objective_preset: 'reduce_repetition',
       objective_overrides: { repeated_note_penalty: 1.5 },
+    })
+  })
+})
+
+describe('experiment API', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('lists and patches run-local experiments', async () => {
+    const experiment = {
+      experiment_id: 'experiment-0001',
+      source_candidate_id: 'strict_0001',
+      source_request: { bar_start: 1, bar_end: 1 },
+      created_at: '2026-05-20T00:00:00Z',
+      notes: 'keeper',
+      variants: [
+        {
+          candidate_id: 'strict_0001_polish_001',
+          status: 'kept',
+          candidate: runSummaryPayload.candidates[0],
+        },
+      ],
+    }
+    const fetchMock = vi.fn(async (path: string, init?: RequestInit) => {
+      void init
+      return new Response(JSON.stringify(path.endsWith('/experiments') ? [experiment] : experiment), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const listed = await listExperiments('run-1')
+    const patched = await patchExperiment('run-1', 'experiment-0001', {
+      notes: 'keeper',
+      variantStatus: { strict_0001_polish_001: 'kept' },
+    })
+
+    expect(listed[0].experiment_id).toBe('experiment-0001')
+    expect(patched.variants[0].status).toBe('kept')
+    const patchCall = fetchMock.mock.calls[1] as [string, RequestInit]
+    expect(patchCall[0]).toBe('/api/runs/run-1/experiments/experiment-0001')
+    expect(JSON.parse(patchCall[1].body as string)).toEqual({
+      notes: 'keeper',
+      variant_status: { strict_0001_polish_001: 'kept' },
     })
   })
 })

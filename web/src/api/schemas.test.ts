@@ -113,8 +113,49 @@ describe('PolishResultSchema', () => {
           },
         },
       ],
+      experiment: {
+        experiment_id: 'experiment-0001',
+        source_candidate_id: 'strict_0001',
+        source_request: { bar_start: 1, bar_end: 2 },
+        created_at: '2026-05-20T00:00:00Z',
+        notes: '',
+        variants: [
+          {
+            candidate_id: 'strict_0001_polish_001',
+            status: 'undecided',
+            candidate: {
+              candidate_id: 'strict_0001_polish_001',
+              rank: 1,
+              title: 'Candidate 1',
+              transform: {
+                engine: 'strict',
+                strict_canon: false,
+                label: 'relaxed canon',
+                delay_q: { text: '1', value: 1 },
+                interval: 7,
+                transform_mode: 'transposition',
+                inversion_axis: null,
+                rhythm_scale: '1',
+              },
+              score: {
+                total: 88,
+                by_category: {},
+                by_rule: {},
+                bonuses: {},
+              },
+              notes: [],
+              violations: [],
+              repair_actions: [],
+              artifacts: {},
+              metadata: {},
+            },
+          },
+        ],
+      },
     }
 
-    expect(PolishResultSchema.parse(payload).summary.returned_variants).toBe(1)
+    const result = PolishResultSchema.parse(payload)
+    expect(result.summary.returned_variants).toBe(1)
+    expect(result.experiment?.experiment_id).toBe('experiment-0001')
   })
 })

@@ -1,6 +1,160 @@
 {
   "components": {
     "schemas": {
+      "CandidateVizDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Artifacts",
+            "type": "object"
+          },
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "musicality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MusicalityBreakdownDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteVizDTO"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "repair_actions": {
+            "items": {
+              "$ref": "#/components/schemas/RepairActionDTO"
+            },
+            "title": "Repair Actions",
+            "type": "array"
+          },
+          "score": {
+            "$ref": "#/components/schemas/ScoreBreakdownDTO"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/TransformVizDTO"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/ViolationVizDTO"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "rank",
+          "title",
+          "transform",
+          "score",
+          "notes",
+          "violations"
+        ],
+        "title": "CandidateVizDTO",
+        "type": "object"
+      },
+      "EngineDTO": {
+        "enum": [
+          "strict",
+          "repair",
+          "solver",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "ExperimentCreateDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateVizDTO"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "source_candidate_id": {
+            "title": "Source Candidate Id",
+            "type": "string"
+          },
+          "source_request": {
+            "additionalProperties": true,
+            "title": "Source Request",
+            "type": "object"
+          }
+        },
+        "required": [
+          "source_candidate_id",
+          "source_request",
+          "candidates"
+        ],
+        "title": "ExperimentCreateDTO",
+        "type": "object"
+      },
+      "ExperimentPatchDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "variant_status": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ExperimentVariantStatusDTO"
+            },
+            "title": "Variant Status",
+            "type": "object"
+          }
+        },
+        "title": "ExperimentPatchDTO",
+        "type": "object"
+      },
+      "ExperimentVariantStatusDTO": {
+        "enum": [
+          "undecided",
+          "kept",
+          "rejected"
+        ],
+        "type": "string"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -21,6 +175,231 @@
           "none"
         ],
         "type": "string"
+      },
+      "MusicalityBreakdownDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MusicalityMetricDTO"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "normalized_values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Normalized Values",
+            "type": "object"
+          },
+          "raw_values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Raw Values",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights",
+            "type": "object"
+          }
+        },
+        "required": [
+          "total",
+          "metrics"
+        ],
+        "title": "MusicalityBreakdownDTO",
+        "type": "object"
+      },
+      "MusicalityMetricDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "higher_is_better": {
+            "title": "Higher Is Better",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "normalized_value": {
+            "title": "Normalized Value",
+            "type": "number"
+          },
+          "raw_value": {
+            "title": "Raw Value",
+            "type": "number"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "raw_value",
+          "normalized_value",
+          "weight",
+          "higher_is_better"
+        ],
+        "title": "MusicalityMetricDTO",
+        "type": "object"
+      },
+      "NoteRoleDTO": {
+        "enum": [
+          "leader",
+          "follower",
+          "unknown"
+        ],
+        "type": "string"
+      },
+      "NoteVizDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bar": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bar"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration_q": {
+            "$ref": "#/components/schemas/RationalDTO"
+          },
+          "end_q": {
+            "$ref": "#/components/schemas/RationalDTO"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "ir_event_id": {
+            "title": "Ir Event Id",
+            "type": "string"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch"
+          },
+          "pitch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Name"
+          },
+          "repair_action_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair Action Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/NoteRoleDTO",
+            "default": "unknown"
+          },
+          "score_element_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Element Id"
+          },
+          "source_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Event Id"
+          },
+          "start_q": {
+            "$ref": "#/components/schemas/RationalDTO"
+          },
+          "transform_origin": {
+            "$ref": "#/components/schemas/TransformOriginDTO",
+            "default": "unknown"
+          },
+          "velocity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Velocity"
+          },
+          "voice_id": {
+            "title": "Voice Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "ir_event_id",
+          "voice_id",
+          "pitch",
+          "pitch_name",
+          "start_q",
+          "duration_q",
+          "end_q",
+          "bar",
+          "beat"
+        ],
+        "title": "NoteVizDTO",
+        "type": "object"
       },
       "ObjectivePreset": {
         "enum": [
@@ -129,6 +508,25 @@
         "title": "PolishRequest",
         "type": "object"
       },
+      "RationalDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "text",
+          "value"
+        ],
+        "title": "RationalDTO",
+        "type": "object"
+      },
       "RenderFormat": {
         "enum": [
           "pdf",
@@ -154,6 +552,94 @@
         "title": "RenderRequest",
         "type": "object"
       },
+      "RepairActionDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "bar": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bar"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RepairActionKindDTO",
+            "default": "unknown"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "new_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Event Id"
+          },
+          "original_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Event Id"
+          },
+          "start_q": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action_id",
+          "message"
+        ],
+        "title": "RepairActionDTO",
+        "type": "object"
+      },
+      "RepairActionKindDTO": {
+        "enum": [
+          "octave_displacement",
+          "pitch_replacement",
+          "passing_tone",
+          "rest_insertion",
+          "duration_adjustment",
+          "solver_assignment",
+          "unknown"
+        ],
+        "type": "string"
+      },
       "RewriteVoice": {
         "enum": [
           "leader",
@@ -161,6 +647,128 @@
           "auto"
         ],
         "type": "string"
+      },
+      "ScoreBreakdownDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bonuses": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Bonuses",
+            "type": "object"
+          },
+          "by_category": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "By Category",
+            "type": "object"
+          },
+          "by_rule": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "By Rule",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "title": "ScoreBreakdownDTO",
+        "type": "object"
+      },
+      "TransformOriginDTO": {
+        "enum": [
+          "input",
+          "strict_transform",
+          "repair",
+          "solver",
+          "unknown"
+        ],
+        "type": "string"
+      },
+      "TransformVizDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "delay_q": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "engine": {
+            "$ref": "#/components/schemas/EngineDTO"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
+          "inversion_axis": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inversion Axis"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rhythm_scale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rhythm Scale"
+          },
+          "strict_canon": {
+            "title": "Strict Canon",
+            "type": "boolean"
+          },
+          "transform_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transform Mode"
+          }
+        },
+        "required": [
+          "engine",
+          "strict_canon",
+          "label"
+        ],
+        "title": "TransformVizDTO",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -200,6 +808,138 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ViolationCategoryDTO": {
+        "enum": [
+          "consonance",
+          "parallel_motion",
+          "range",
+          "crossing",
+          "melody",
+          "cadence",
+          "similarity",
+          "repair",
+          "other"
+        ],
+        "type": "string"
+      },
+      "ViolationSeverityDTO": {
+        "enum": [
+          "hard",
+          "soft",
+          "info"
+        ],
+        "type": "string"
+      },
+      "ViolationVizDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bar": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bar"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ViolationCategoryDTO",
+            "default": "other"
+          },
+          "end_q": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "ir_event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ir Event Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "penalty": {
+            "title": "Penalty",
+            "type": "number"
+          },
+          "related_event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Related Event Ids",
+            "type": "array"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/ViolationSeverityDTO"
+          },
+          "start_q": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RationalDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "violation_id": {
+            "title": "Violation Id",
+            "type": "string"
+          },
+          "voice_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Voice Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "violation_id",
+          "rule_id",
+          "severity",
+          "penalty",
+          "message",
+          "bar",
+          "beat",
+          "voice_ids",
+          "event_ids"
+        ],
+        "title": "ViolationVizDTO",
         "type": "object"
       }
     }
@@ -662,6 +1402,159 @@
           }
         },
         "summary": "Render Candidate"
+      }
+    },
+    "/api/runs/{run_id}/experiments": {
+      "get": {
+        "operationId": "list_run_experiments_api_runs__run_id__experiments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Run Experiments Api Runs  Run Id  Experiments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Run Experiments"
+      },
+      "post": {
+        "operationId": "create_run_experiment_api_runs__run_id__experiments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Run Experiment Api Runs  Run Id  Experiments Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Run Experiment"
+      }
+    },
+    "/api/runs/{run_id}/experiments/{experiment_id}": {
+      "patch": {
+        "operationId": "patch_run_experiment_api_runs__run_id__experiments__experiment_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Patch Run Experiment Api Runs  Run Id  Experiments  Experiment Id  Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Run Experiment"
       }
     },
     "/api/runs/{run_id}/visualization": {

@@ -20,12 +20,14 @@ from kithairon.config import (
     load_config,
 )
 from kithairon.errors import Diagnostic, KithaironError
+from kithairon.experiments import create_experiment, list_experiments, patch_experiment
 from kithairon.pipeline import run_generation
 from kithairon.polish import PolishRequest, polish_run_candidate
 from kithairon.visualization.artifact_index import (
     ArtifactIndexError,
 )
 from kithairon.visualization.export_score import RenderFormat
+from kithairon.visualization.models import ExperimentCreateDTO, ExperimentPatchDTO
 
 console = Console()
 ALLOWED_UPLOAD_SUFFIXES = {".mid", ".midi", ".musicxml", ".xml", ".mxl"}
@@ -232,6 +234,21 @@ def _register_routes(app: Any, settings: ApiSettings) -> None:
         _polish_candidate_endpoint(settings),
         methods=["POST"],
     )
+    app.add_api_route(
+        "/api/runs/{run_id}/experiments",
+        _list_experiments_endpoint(settings),
+        methods=["GET"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/experiments",
+        _create_experiment_endpoint(settings),
+        methods=["POST"],
+    )
+    app.add_api_route(
+        "/api/runs/{run_id}/experiments/{experiment_id}",
+        _patch_experiment_endpoint(settings),
+        methods=["PATCH"],
+    )
     register_artifact_routes(app, settings)
 
 
@@ -272,8 +289,28 @@ def _polish_candidate_endpoint(settings: ApiSettings) -> Any:
         candidate_id: str,
         request: PolishRequest,
     ) -> dict[str, object]:
+        if settings.read_only:
+            raise ApiError(
+                "This server is running in read-only mode.",
+                code="read_only_mode",
+                status_code=403,
+            )
         try:
-            result = polish_run_candidate(run_dir(settings, run_id), candidate_id, request)
+            current_run_dir = run_dir(settings, run_id)
+            result = polish_run_candidate(current_run_dir, candidate_id, request)
+            if result.candidates:
+                experiment = create_experiment(
+                    current_run_dir,
+                    source_candidate_id=candidate_id,
+                    source_request=result.request.model_dump(mode="json"),
+                    candidates=result.candidates,
+                )
+                result = result.model_copy(
+                    update={
+                        "candidates": [variant.candidate for variant in experiment.variants],
+                        "experiment": experiment,
+                    }
+                )
         except KithaironError as exc:
             status_code = 404 if exc.diagnostic.code == "polish_candidate_not_found" else 400
             raise ApiError(
@@ -285,6 +322,65 @@ def _polish_candidate_endpoint(settings: ApiSettings) -> Any:
         return result.model_dump(mode="json")
 
     return polish_candidate
+
+
+def _list_experiments_endpoint(settings: ApiSettings) -> Any:
+    def list_run_experiments(run_id: str) -> list[dict[str, object]]:
+        return [
+            experiment.model_dump(mode="json")
+            for experiment in list_experiments(run_dir(settings, run_id))
+        ]
+
+    return list_run_experiments
+
+
+def _create_experiment_endpoint(settings: ApiSettings) -> Any:
+    def create_run_experiment(
+        run_id: str,
+        request: ExperimentCreateDTO,
+    ) -> dict[str, object]:
+        if settings.read_only:
+            raise ApiError(
+                "This server is running in read-only mode.",
+                code="read_only_mode",
+                status_code=403,
+            )
+        experiment = create_experiment(
+            run_dir(settings, run_id),
+            source_candidate_id=request.source_candidate_id,
+            source_request=request.source_request,
+            candidates=request.candidates,
+        )
+        return experiment.model_dump(mode="json")
+
+    return create_run_experiment
+
+
+def _patch_experiment_endpoint(settings: ApiSettings) -> Any:
+    def patch_run_experiment(
+        run_id: str,
+        experiment_id: str,
+        request: ExperimentPatchDTO,
+    ) -> dict[str, object]:
+        if settings.read_only:
+            raise ApiError(
+                "This server is running in read-only mode.",
+                code="read_only_mode",
+                status_code=403,
+            )
+        try:
+            experiment = patch_experiment(run_dir(settings, run_id), experiment_id, request)
+        except KithaironError as exc:
+            status_code = 404 if exc.diagnostic.code == "experiment_not_found" else 400
+            raise ApiError(
+                exc.diagnostic.message,
+                code=exc.diagnostic.code,
+                status_code=status_code,
+                details=dict(exc.diagnostic.details),
+            ) from exc
+        return experiment.model_dump(mode="json")
+
+    return patch_run_experiment
 
 
 def _mount_frontend(app: Any, settings: ApiSettings) -> None:

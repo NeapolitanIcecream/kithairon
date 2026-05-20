@@ -245,6 +245,17 @@
   font-size: 13px;
 }
 
+.candidate-lab-experiment {
+  border: 1px solid #d9dee2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.candidate-lab-table {
+  font-size: 13px;
+}
+
 .breakdown-table tr[data-selected='true'] {
   background: #eef7f9;
 }

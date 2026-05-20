@@ -172,10 +172,28 @@ export const PolishSummarySchema = z.object({
   changed_notes: z.number().int(),
 })
 
+export const ExperimentVariantStatusSchema = z.enum(['undecided', 'kept', 'rejected'])
+
+export const ExperimentVariantSchema = z.object({
+  candidate_id: z.string(),
+  status: ExperimentVariantStatusSchema,
+  candidate: CandidateVizSchema,
+})
+
+export const ExperimentSchema = z.object({
+  experiment_id: z.string(),
+  source_candidate_id: z.string(),
+  source_request: z.record(z.string(), z.unknown()),
+  created_at: z.string(),
+  notes: z.string(),
+  variants: z.array(ExperimentVariantSchema),
+})
+
 export const PolishResultSchema = z.object({
   request: PolishRequestSchema,
   summary: PolishSummarySchema,
   candidates: z.array(CandidateVizSchema),
+  experiment: ExperimentSchema.nullable().optional(),
 })
 
 export type Rational = z.infer<typeof RationalSchema>
@@ -194,4 +212,7 @@ export type ObjectivePreset = z.infer<typeof ObjectivePresetSchema>
 export type PolishObjectiveWeights = z.infer<typeof PolishObjectiveWeightsSchema>
 export type PolishRequest = z.infer<typeof PolishRequestSchema>
 export type PolishSummary = z.infer<typeof PolishSummarySchema>
+export type ExperimentVariantStatus = z.infer<typeof ExperimentVariantStatusSchema>
+export type ExperimentVariant = z.infer<typeof ExperimentVariantSchema>
+export type Experiment = z.infer<typeof ExperimentSchema>
 export type PolishResult = z.infer<typeof PolishResultSchema>

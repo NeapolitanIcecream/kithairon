@@ -91,6 +91,26 @@ def update_candidate_artifacts(
     )
 
 
+def register_candidate_artifacts(
+    index_path: Path,
+    candidate_id: str,
+    artifacts: Mapping[str, str],
+) -> None:
+    """Register a candidate artifact entry in an existing artifact index."""
+    index = dict(load_artifact_index(index_path))
+    candidates = dict(_object_mapping(index.get("candidates")))
+    candidate: dict[str, object] = dict(_object_mapping(candidates.get(candidate_id)))
+    for kind, relative_path in artifacts.items():
+        _resolve_relative_artifact(index_path.parent, relative_path)
+        candidate[kind] = relative_path
+    candidates[candidate_id] = candidate
+    index["candidates"] = candidates
+    index_path.write_text(
+        json.dumps(index, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _candidate_artifacts(candidate: CanonCandidate) -> dict[str, str | None]:
     outputs = _string_mapping(candidate.metadata.get("outputs"))
     return {kind: outputs.get(kind) for kind in CANDIDATE_ARTIFACTS}

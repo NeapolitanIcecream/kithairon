@@ -33,6 +33,7 @@ type RepairActionKindDTO = Literal[
 ]
 type EngineDTO = Literal["strict", "repair", "solver", "auto"]
 type ViolationSeverityDTO = Literal["hard", "soft", "info"]
+type ExperimentVariantStatusDTO = Literal["undecided", "kept", "rejected"]
 
 
 class VisualizationModel(BaseModel):
@@ -153,6 +154,32 @@ class RunSummaryDTO(VisualizationModel):
     config_summary: dict[str, object]
     artifacts: dict[str, str] = Field(default_factory=dict)
     candidates: list[CandidateVizDTO]
+
+
+class ExperimentVariantDTO(VisualizationModel):
+    candidate_id: str
+    status: ExperimentVariantStatusDTO = "undecided"
+    candidate: CandidateVizDTO
+
+
+class ExperimentDTO(VisualizationModel):
+    experiment_id: str
+    source_candidate_id: str
+    source_request: dict[str, object]
+    created_at: str
+    notes: str = ""
+    variants: list[ExperimentVariantDTO]
+
+
+class ExperimentCreateDTO(VisualizationModel):
+    source_candidate_id: str
+    source_request: dict[str, object]
+    candidates: list[CandidateVizDTO]
+
+
+class ExperimentPatchDTO(VisualizationModel):
+    notes: str | None = None
+    variant_status: dict[str, ExperimentVariantStatusDTO] = Field(default_factory=dict)
 
 
 def rational_dto(value: Fraction) -> RationalDTO:
