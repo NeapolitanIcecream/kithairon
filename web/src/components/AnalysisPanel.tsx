@@ -27,10 +27,24 @@ export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
               <Table.Tr key={phrase.phrase_id}>
                 <Table.Td>
                   <Text size="sm">{phrase.label}</Text>
+                <Text size="xs" c="dimmed">
+                  {phrase.note_count} notes
+                </Text>
+                {phrase.arrival_event_id !== null && phrase.arrival_event_id !== undefined ? (
                   <Text size="xs" c="dimmed">
-                    {phrase.note_count} notes
+                    Arrival {phrase.arrival_event_id} / high {phrase.high_point_pitch ?? '-'}
                   </Text>
-                </Table.Td>
+                ) : null}
+                {phrase.warnings.length > 0 ? (
+                  <Group gap={4} mt={4}>
+                    {phrase.warnings.map((warning) => (
+                      <Badge key={warning} size="xs" variant="light" color="orange">
+                        {warning}
+                      </Badge>
+                    ))}
+                  </Group>
+                ) : null}
+              </Table.Td>
                 <Table.Td className="breakdown-value">
                   {phrase.start_q.text}-{phrase.end_q.text}
                 </Table.Td>
@@ -50,6 +64,18 @@ export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
           </Text>
         </Stack>
       ) : null}
+      {analysis.cadences.length > 0 ? (
+        <Stack gap={4}>
+          {analysis.cadences.map((cadence) => (
+            <Group key={cadence.cadence_id} justify="space-between">
+              <Text size="sm">{cadence.label}</Text>
+              <Badge size="xs" variant="light" color={cadenceColor(cadence.strength)}>
+                Bar {cadence.bar}
+              </Badge>
+            </Group>
+          ))}
+        </Stack>
+      ) : null}
       {analysis.bass_support !== null && analysis.bass_support !== undefined ? (
         <Stack gap={4}>
           <Group gap="xs">
@@ -61,6 +87,11 @@ export function AnalysisPanel({ analysis }: AnalysisPanelProps) {
           <Text size="xs" c="dimmed">
             Repeat {(analysis.bass_support.repeated_note_ratio * 100).toFixed(0)}% / stepwise{' '}
             {(analysis.bass_support.stepwise_motion_ratio * 100).toFixed(0)}%
+          </Text>
+          <Text size="xs" c="dimmed">
+            Support {(analysis.bass_support.root_support_proxy * 100).toFixed(0)}% / foundation{' '}
+            {(analysis.bass_support.sustained_foundation_score * 100).toFixed(0)}% / independence{' '}
+            {(analysis.bass_support.bass_independence_score * 100).toFixed(0)}%
           </Text>
         </Stack>
       ) : null}

@@ -27,6 +27,26 @@ def test_fixed_voice_invention_rewrites_selected_voice_and_records_mode() -> Non
     assert _voice_pitches(variants[0], role="follower") != _voice_pitches(parent, role="follower")
 
 
+def test_fixed_voice_invention_can_rewrite_upper_above_fixed_lower() -> None:
+    parent = _candidate()
+    request = PolishRequest(
+        bar_start=1,
+        bar_end=1,
+        lock_voice="follower",
+        rewrite_voice="leader",
+        search_mode="rewrite_selected_voice",
+        max_variants=2,
+    )
+
+    variants = search_polish_variants(parent, request)
+
+    assert variants
+    assert variants[0].metadata["search_mode"] == "rewrite_selected_voice"
+    assert variants[0].metadata["rewrite_voice"] == "leader"
+    assert _voice_pitches(variants[0], role="follower") == _voice_pitches(parent, role="follower")
+    assert _voice_pitches(variants[0], role="leader") != _voice_pitches(parent, role="leader")
+
+
 def _voice_pitches(candidate: CanonCandidate, *, role: str) -> tuple[int | None, ...]:
     voice = next(voice for voice in candidate.voices if voice.role == role)
     return tuple(event.pitch for event in voice.melody.events)

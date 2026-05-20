@@ -105,6 +105,47 @@ def test_polish_endpoint_returns_lineaged_variants_for_real_run(tmp_path: Path) 
     assert metadata["rewrite_voice"] == "follower"
 
 
+def test_polish_endpoint_accepts_fixed_voice_invention_modes(tmp_path: Path) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        run_response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+
+    assert run_response.status_code == 200, run_response.text
+    run_payload = cast(dict[str, Any], run_response.json())
+    run_id = cast(str, run_payload["run_id"])
+    parent_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+
+    for lock_voice, rewrite_voice in (("leader", "follower"), ("follower", "leader")):
+        rewrite_bar = _first_pitched_bar(parent_candidate, role=rewrite_voice)
+        response = client.post(
+            f"/api/runs/{run_id}/candidates/{candidate_id}/polish",
+            json={
+                "bar_start": rewrite_bar,
+                "bar_end": rewrite_bar,
+                "lock_voice": lock_voice,
+                "rewrite_voice": rewrite_voice,
+                "search_mode": "rewrite_selected_voice",
+                "max_variants": 1,
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        payload = cast(dict[str, Any], response.json())
+        summary = cast(dict[str, Any], payload["summary"])
+        variants = cast(list[dict[str, Any]], payload["candidates"])
+        metadata = cast(dict[str, Any], variants[0]["metadata"])
+        assert summary["search_mode"] == "rewrite_selected_voice"
+        assert summary["rewrite_voice"] == rewrite_voice
+        assert metadata["search_mode"] == "rewrite_selected_voice"
+        assert metadata["rewrite_voice"] == rewrite_voice
+
+
 def test_polish_endpoint_reports_missing_candidate_as_diagnostic(tmp_path: Path) -> None:
     client = TestClient(create_app(output_root=tmp_path))
 

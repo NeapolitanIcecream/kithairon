@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { MantineProvider } from '@mantine/core'
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CandidateViz, Experiment, RunSummary } from '../api/schemas'
@@ -24,6 +24,7 @@ describe('CandidateLabPanel', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
@@ -62,6 +63,35 @@ describe('CandidateLabPanel', () => {
     expect(JSON.parse(call[1].body as string)).toEqual({
       variant_status: { strict_0001_polish_001: 'kept' },
     })
+  })
+
+  it('labels fixed-voice invention experiments', () => {
+    const experiment = {
+      ...experimentFixture(),
+      source_request: {
+        bar_start: 1,
+        bar_end: 2,
+        objective_preset: 'smooth_bass',
+        search_mode: 'rewrite_selected_voice',
+      },
+    }
+
+    render(
+      <MantineProvider>
+        <CandidateLabPanel
+          runSummary={runSummary()}
+          experiments={[experiment]}
+          onExperimentsChange={vi.fn()}
+          onSelectCandidate={vi.fn()}
+        />
+      </MantineProvider>,
+    )
+
+    expect(
+      screen.getAllByText((_, node) =>
+        Boolean(node?.textContent?.includes('fixed voice smooth_bass bars 1-2')),
+      ).length,
+    ).toBeGreaterThan(0)
   })
 })
 

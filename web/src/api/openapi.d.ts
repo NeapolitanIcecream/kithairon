@@ -257,15 +257,32 @@ export interface components {
             bar_end: number;
             /** Bar Start */
             bar_start: number;
+            /**
+             * Bass Independence Score
+             * @default 0
+             */
+            bass_independence_score: number;
             motion_label: components["schemas"]["BassMotionLabelDTO"];
             /** Repeated Note Ratio */
             repeated_note_ratio: number;
+            /**
+             * Root Support Proxy
+             * @default 0
+             */
+            root_support_proxy: number;
             /** Static Bars */
             static_bars: number[];
             /** Static Bass */
             static_bass: boolean;
             /** Stepwise Motion Ratio */
             stepwise_motion_ratio: number;
+            /** Strong Beat Support Event Ids */
+            strong_beat_support_event_ids?: string[];
+            /**
+             * Sustained Foundation Score
+             * @default 0
+             */
+            sustained_foundation_score: number;
             /** Unique Pitch Count */
             unique_pitch_count: number;
             /** Voice Id */
@@ -282,6 +299,8 @@ export interface components {
             beat: components["schemas"]["RationalDTO"];
             /** Cadence Id */
             cadence_id: string;
+            /** @default ambiguous_close */
+            cadence_type: components["schemas"]["CadenceTypeDTO"];
             /** Event Ids */
             event_ids: string[];
             /** Final Interval */
@@ -294,10 +313,14 @@ export interface components {
             /** Upper Motion */
             upper_motion: number | null;
         };
+        /** @enum {string} */
+        CadenceTypeDTO: "open_phrase" | "half_cadence_tendency" | "authentic_close_tendency" | "weak_close" | "ambiguous_close";
         /** CandidateAnalysisDTO */
         CandidateAnalysisDTO: {
             bass_support?: components["schemas"]["BassSupportDTO"] | null;
             cadence?: components["schemas"]["CadenceSummaryDTO"] | null;
+            /** Cadences */
+            cadences?: components["schemas"]["CadenceSummaryDTO"][];
             /** Phrases */
             phrases: components["schemas"]["PhraseSpanDTO"][];
         };
@@ -445,6 +468,10 @@ export interface components {
         ObjectivePreset: "reduce_repetition" | "smooth_bass" | "strengthen_cadence" | "general_polish";
         /** PhraseSpanDTO */
         PhraseSpanDTO: {
+            /** Arrival Event Id */
+            arrival_event_id?: string | null;
+            /** Arrival Pitch */
+            arrival_pitch?: number | null;
             /** Bar End */
             bar_end: number;
             /** Bar Start */
@@ -452,13 +479,26 @@ export interface components {
             end_q: components["schemas"]["RationalDTO"];
             /** Event Ids */
             event_ids: string[];
+            /**
+             * Flat Sequence Warning
+             * @default false
+             */
+            flat_sequence_warning: boolean;
+            /** High Point Event Id */
+            high_point_event_id?: string | null;
+            /** High Point Pitch */
+            high_point_pitch?: number | null;
             /** Label */
             label: string;
             /** Note Count */
             note_count: number;
             /** Phrase Id */
             phrase_id: string;
+            /** Repeated Note Plateaus */
+            repeated_note_plateaus?: string[];
             start_q: components["schemas"]["RationalDTO"];
+            /** Warnings */
+            warnings?: string[];
         };
         /** PolishObjectiveWeights */
         PolishObjectiveWeights: {

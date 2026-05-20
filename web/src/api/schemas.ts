@@ -120,6 +120,13 @@ export const PhraseSpanSchema = z.object({
   event_ids: z.array(z.string()),
   note_count: z.number().int(),
   label: z.string(),
+  high_point_event_id: z.string().nullable().optional(),
+  high_point_pitch: z.number().int().nullable().optional(),
+  arrival_event_id: z.string().nullable().optional(),
+  arrival_pitch: z.number().int().nullable().optional(),
+  repeated_note_plateaus: z.array(z.string()).optional().default([]),
+  flat_sequence_warning: z.boolean().optional().default(false),
+  warnings: z.array(z.string()).optional().default([]),
 })
 
 export const CadenceSummarySchema = z.object({
@@ -127,6 +134,16 @@ export const CadenceSummarySchema = z.object({
   bar: z.number().int(),
   beat: RationalSchema,
   strength: z.enum(['strong', 'moderate', 'weak']),
+  cadence_type: z
+    .enum([
+      'open_phrase',
+      'half_cadence_tendency',
+      'authentic_close_tendency',
+      'weak_close',
+      'ambiguous_close',
+    ])
+    .optional()
+    .default('ambiguous_close'),
   final_interval: z.string(),
   bass_motion: z.number().int().nullable(),
   upper_motion: z.number().int().nullable(),
@@ -146,11 +163,16 @@ export const BassSupportSchema = z.object({
   static_bars: z.array(z.number().int()),
   static_bass: z.boolean(),
   motion_label: z.enum(['static', 'stepwise', 'active']),
+  strong_beat_support_event_ids: z.array(z.string()).optional().default([]),
+  root_support_proxy: z.number().optional().default(0),
+  sustained_foundation_score: z.number().optional().default(0),
+  bass_independence_score: z.number().optional().default(0),
 })
 
 export const CandidateAnalysisSchema = z.object({
   phrases: z.array(PhraseSpanSchema),
   cadence: CadenceSummarySchema.nullable().optional(),
+  cadences: z.array(CadenceSummarySchema).optional().default([]),
   bass_support: BassSupportSchema.nullable().optional(),
 })
 

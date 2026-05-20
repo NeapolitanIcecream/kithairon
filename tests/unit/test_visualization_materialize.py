@@ -173,8 +173,11 @@ def test_materialize_candidate_attaches_composition_analysis() -> None:
 
     assert dto.analysis is not None
     assert dto.analysis.phrases[0].bar_start == 1
+    assert dto.analysis.phrases[0].arrival_event_id is not None
+    assert dto.analysis.cadences
     assert dto.analysis.bass_support is not None
     assert dto.analysis.bass_support.static_bass is True
+    assert dto.analysis.bass_support.strong_beat_support_event_ids
 
 
 def _candidate(

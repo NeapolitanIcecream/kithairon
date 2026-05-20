@@ -123,12 +123,14 @@ function RewriteSummary({ candidate }: { candidate: CandidateViz }) {
   const parent = candidate.metadata.parent_candidate_id
   const editedBars = candidate.metadata.edited_bars
   const rewriteVoice = candidate.metadata.rewrite_voice
+  const searchMode = candidate.metadata.search_mode
   if (typeof parent === 'string') {
+    const mode = searchMode === 'rewrite_selected_voice' ? 'fixed voice' : 'local polish'
     return (
       <Stack gap={4}>
         <Text size="sm">Parent {parent}</Text>
         <Text size="xs" c="dimmed">
-          {typeof rewriteVoice === 'string' ? rewriteVoice : 'rewrite'} /{' '}
+          {mode} / {typeof rewriteVoice === 'string' ? rewriteVoice : 'rewrite'} /{' '}
           {Array.isArray(editedBars) ? editedBars.join('-') : 'bars ?'}
         </Text>
       </Stack>

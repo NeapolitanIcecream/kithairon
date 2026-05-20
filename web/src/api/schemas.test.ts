@@ -214,6 +214,13 @@ describe('CandidateAnalysisSchema', () => {
           event_ids: ['leader:l1'],
           note_count: 8,
           label: 'Bars 1-2',
+          high_point_event_id: 'leader:l4',
+          high_point_pitch: 67,
+          arrival_event_id: 'leader:l4',
+          arrival_pitch: 67,
+          repeated_note_plateaus: ['follower:f1', 'follower:f2', 'follower:f3'],
+          flat_sequence_warning: true,
+          warnings: ['repeated_note_plateau', 'flat_sequence'],
         },
       ],
       cadence: {
@@ -221,6 +228,7 @@ describe('CandidateAnalysisSchema', () => {
         bar: 2,
         beat: { text: '1', value: 1 },
         strength: 'weak',
+        cadence_type: 'weak_close',
         final_interval: 'P8',
         bass_motion: 0,
         upper_motion: -2,
@@ -228,6 +236,21 @@ describe('CandidateAnalysisSchema', () => {
         label: 'Weak final cadence',
         rationale: 'Weak cadence: final interval P8, bass motion +0.',
       },
+      cadences: [
+        {
+          cadence_id: 'phrase-01-cadence',
+          bar: 1,
+          beat: { text: '1', value: 1 },
+          strength: 'moderate',
+          cadence_type: 'open_phrase',
+          final_interval: 'M3',
+          bass_motion: 2,
+          upper_motion: 1,
+          event_ids: ['leader:l1', 'follower:f1'],
+          label: 'Open Phrase',
+          rationale: 'Open phrase.',
+        },
+      ],
       bass_support: {
         voice_id: 'follower',
         bar_start: 1,
@@ -239,9 +262,15 @@ describe('CandidateAnalysisSchema', () => {
         static_bars: [1, 2],
         static_bass: true,
         motion_label: 'static',
+        strong_beat_support_event_ids: ['follower:f1'],
+        root_support_proxy: 1,
+        sustained_foundation_score: 0.75,
+        bass_independence_score: 0.2,
       },
     })
 
     expect(analysis.bass_support?.motion_label).toBe('static')
+    expect(analysis.phrases[0].warnings).toContain('flat_sequence')
+    expect(analysis.cadences[0].cadence_type).toBe('open_phrase')
   })
 })

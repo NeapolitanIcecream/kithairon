@@ -184,7 +184,9 @@ function requestLabel(sourceRequest: Record<string, unknown>): string {
   const preset = sourceRequest.objective_preset
   const start = sourceRequest.bar_start
   const end = sourceRequest.bar_end
-  return `${typeof preset === 'string' ? preset : 'polish'} bars ${start ?? '?'}-${end ?? '?'}`
+  const mode = sourceRequest.search_mode
+  const modeLabel = mode === 'rewrite_selected_voice' ? 'fixed voice' : 'polish'
+  return `${modeLabel} ${typeof preset === 'string' ? preset : 'polish'} bars ${start ?? '?'}-${end ?? '?'}`
 }
 
 function readableErrorMessage(error: unknown): string {

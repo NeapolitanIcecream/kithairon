@@ -24,11 +24,21 @@
             "title": "Bar Start",
             "type": "integer"
           },
+          "bass_independence_score": {
+            "default": 0.0,
+            "title": "Bass Independence Score",
+            "type": "number"
+          },
           "motion_label": {
             "$ref": "#/components/schemas/BassMotionLabelDTO"
           },
           "repeated_note_ratio": {
             "title": "Repeated Note Ratio",
+            "type": "number"
+          },
+          "root_support_proxy": {
+            "default": 0.0,
+            "title": "Root Support Proxy",
             "type": "number"
           },
           "static_bars": {
@@ -44,6 +54,18 @@
           },
           "stepwise_motion_ratio": {
             "title": "Stepwise Motion Ratio",
+            "type": "number"
+          },
+          "strong_beat_support_event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Strong Beat Support Event Ids",
+            "type": "array"
+          },
+          "sustained_foundation_score": {
+            "default": 0.0,
+            "title": "Sustained Foundation Score",
             "type": "number"
           },
           "unique_pitch_count": {
@@ -103,6 +125,10 @@
             "title": "Cadence Id",
             "type": "string"
           },
+          "cadence_type": {
+            "$ref": "#/components/schemas/CadenceTypeDTO",
+            "default": "ambiguous_close"
+          },
           "event_ids": {
             "items": {
               "type": "string"
@@ -152,6 +178,16 @@
         "title": "CadenceSummaryDTO",
         "type": "object"
       },
+      "CadenceTypeDTO": {
+        "enum": [
+          "open_phrase",
+          "half_cadence_tendency",
+          "authentic_close_tendency",
+          "weak_close",
+          "ambiguous_close"
+        ],
+        "type": "string"
+      },
       "CandidateAnalysisDTO": {
         "additionalProperties": false,
         "properties": {
@@ -174,6 +210,13 @@
                 "type": "null"
               }
             ]
+          },
+          "cadences": {
+            "items": {
+              "$ref": "#/components/schemas/CadenceSummaryDTO"
+            },
+            "title": "Cadences",
+            "type": "array"
           },
           "phrases": {
             "items": {
@@ -671,6 +714,28 @@
       "PhraseSpanDTO": {
         "additionalProperties": false,
         "properties": {
+          "arrival_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Event Id"
+          },
+          "arrival_pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Pitch"
+          },
           "bar_end": {
             "title": "Bar End",
             "type": "integer"
@@ -689,6 +754,33 @@
             "title": "Event Ids",
             "type": "array"
           },
+          "flat_sequence_warning": {
+            "default": false,
+            "title": "Flat Sequence Warning",
+            "type": "boolean"
+          },
+          "high_point_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Point Event Id"
+          },
+          "high_point_pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Point Pitch"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -701,8 +793,22 @@
             "title": "Phrase Id",
             "type": "string"
           },
+          "repeated_note_plateaus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Repeated Note Plateaus",
+            "type": "array"
+          },
           "start_q": {
             "$ref": "#/components/schemas/RationalDTO"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
           }
         },
         "required": [

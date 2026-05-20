@@ -273,6 +273,13 @@ def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
                 event_ids=list(phrase.event_ids),
                 note_count=phrase.note_count,
                 label=phrase.label,
+                high_point_event_id=phrase.high_point_event_id,
+                high_point_pitch=phrase.high_point_pitch,
+                arrival_event_id=phrase.arrival_event_id,
+                arrival_pitch=phrase.arrival_pitch,
+                repeated_note_plateaus=list(phrase.repeated_note_plateaus),
+                flat_sequence_warning=phrase.flat_sequence_warning,
+                warnings=list(phrase.warnings),
             )
             for phrase in analysis.phrases
         ],
@@ -282,6 +289,7 @@ def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
                 bar=analysis.cadence.bar,
                 beat=rational_dto(analysis.cadence.beat),
                 strength=analysis.cadence.strength,
+                cadence_type=analysis.cadence.cadence_type,
                 final_interval=analysis.cadence.final_interval,
                 bass_motion=analysis.cadence.bass_motion,
                 upper_motion=analysis.cadence.upper_motion,
@@ -292,6 +300,22 @@ def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
             if analysis.cadence is not None
             else None
         ),
+        cadences=[
+            CadenceSummaryDTO(
+                cadence_id=cadence.cadence_id,
+                bar=cadence.bar,
+                beat=rational_dto(cadence.beat),
+                strength=cadence.strength,
+                cadence_type=cadence.cadence_type,
+                final_interval=cadence.final_interval,
+                bass_motion=cadence.bass_motion,
+                upper_motion=cadence.upper_motion,
+                event_ids=list(cadence.event_ids),
+                label=cadence.label,
+                rationale=cadence.rationale,
+            )
+            for cadence in analysis.cadences
+        ],
         bass_support=(
             BassSupportDTO(
                 voice_id=analysis.bass_support.voice_id,
@@ -304,6 +328,12 @@ def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
                 static_bars=list(analysis.bass_support.static_bars),
                 static_bass=analysis.bass_support.static_bass,
                 motion_label=analysis.bass_support.motion_label,
+                strong_beat_support_event_ids=list(
+                    analysis.bass_support.strong_beat_support_event_ids
+                ),
+                root_support_proxy=analysis.bass_support.root_support_proxy,
+                sustained_foundation_score=analysis.bass_support.sustained_foundation_score,
+                bass_independence_score=analysis.bass_support.bass_independence_score,
             )
             if analysis.bass_support is not None
             else None

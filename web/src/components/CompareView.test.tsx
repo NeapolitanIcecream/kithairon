@@ -35,6 +35,7 @@ describe('CompareView', () => {
               parent_candidate_id: 'strict_0001',
               edited_bars: [1, 2],
               rewrite_voice: 'follower',
+              search_mode: 'rewrite_selected_voice',
             }),
           ]}
           onClear={onClear}
@@ -46,6 +47,7 @@ describe('CompareView', () => {
     expect(screen.getByText('92.0')).toBeTruthy()
     expect(screen.getByText('83.0')).toBeTruthy()
     expect(screen.getByText('Parent strict_0001')).toBeTruthy()
+    expect(screen.getByText('fixed voice / follower / 1-2')).toBeTruthy()
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
 

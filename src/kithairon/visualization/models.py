@@ -35,6 +35,13 @@ type EngineDTO = Literal["strict", "repair", "solver", "auto"]
 type ViolationSeverityDTO = Literal["hard", "soft", "info"]
 type ExperimentVariantStatusDTO = Literal["undecided", "kept", "rejected"]
 type CadenceStrengthDTO = Literal["strong", "moderate", "weak"]
+type CadenceTypeDTO = Literal[
+    "open_phrase",
+    "half_cadence_tendency",
+    "authentic_close_tendency",
+    "weak_close",
+    "ambiguous_close",
+]
 type BassMotionLabelDTO = Literal["static", "stepwise", "active"]
 
 
@@ -140,6 +147,13 @@ class PhraseSpanDTO(VisualizationModel):
     event_ids: list[str]
     note_count: int
     label: str
+    high_point_event_id: str | None = None
+    high_point_pitch: int | None = None
+    arrival_event_id: str | None = None
+    arrival_pitch: int | None = None
+    repeated_note_plateaus: list[str] = Field(default_factory=list)
+    flat_sequence_warning: bool = False
+    warnings: list[str] = Field(default_factory=list)
 
 
 class CadenceSummaryDTO(VisualizationModel):
@@ -147,6 +161,7 @@ class CadenceSummaryDTO(VisualizationModel):
     bar: int
     beat: RationalDTO
     strength: CadenceStrengthDTO
+    cadence_type: CadenceTypeDTO = "ambiguous_close"
     final_interval: str
     bass_motion: int | None
     upper_motion: int | None
@@ -166,11 +181,20 @@ class BassSupportDTO(VisualizationModel):
     static_bars: list[int]
     static_bass: bool
     motion_label: BassMotionLabelDTO
+    strong_beat_support_event_ids: list[str] = Field(default_factory=list)
+    root_support_proxy: float = 0.0
+    sustained_foundation_score: float = 0.0
+    bass_independence_score: float = 0.0
+
+
+def _empty_cadences() -> list[CadenceSummaryDTO]:
+    return []
 
 
 class CandidateAnalysisDTO(VisualizationModel):
     phrases: list[PhraseSpanDTO]
     cadence: CadenceSummaryDTO | None = None
+    cadences: list[CadenceSummaryDTO] = Field(default_factory=_empty_cadences)
     bass_support: BassSupportDTO | None = None
 
 

@@ -15,6 +15,10 @@ def test_summarize_bass_support_flags_static_repeated_bass() -> None:
     assert summary.motion_label == "static"
     assert summary.repeated_note_ratio == 1.0
     assert summary.unique_pitch_count == 1
+    assert summary.strong_beat_support_event_ids == ("follower:f0",)
+    assert summary.root_support_proxy == 1.0
+    assert summary.sustained_foundation_score == 1.0
+    assert summary.bass_independence_score == 0.275
 
 
 def test_summarize_bass_support_labels_stepwise_motion() -> None:
@@ -24,6 +28,9 @@ def test_summarize_bass_support_labels_stepwise_motion() -> None:
     assert summary.static_bass is False
     assert summary.motion_label == "stepwise"
     assert summary.stepwise_motion_ratio == 1.0
+    assert summary.strong_beat_support_event_ids == ("follower:f0",)
+    assert summary.root_support_proxy == 1.0
+    assert summary.bass_independence_score > 0.8
 
 
 def _candidate(*, follower_pitches: tuple[int, ...]) -> CanonCandidate:
