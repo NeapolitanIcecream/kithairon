@@ -34,6 +34,8 @@ type RepairActionKindDTO = Literal[
 type EngineDTO = Literal["strict", "repair", "solver", "auto"]
 type ViolationSeverityDTO = Literal["hard", "soft", "info"]
 type ExperimentVariantStatusDTO = Literal["undecided", "kept", "rejected"]
+type CadenceStrengthDTO = Literal["strong", "moderate", "weak"]
+type BassMotionLabelDTO = Literal["static", "stepwise", "active"]
 
 
 class VisualizationModel(BaseModel):
@@ -129,6 +131,49 @@ class TransformVizDTO(VisualizationModel):
     rhythm_scale: str | None = None
 
 
+class PhraseSpanDTO(VisualizationModel):
+    phrase_id: str
+    bar_start: int
+    bar_end: int
+    start_q: RationalDTO
+    end_q: RationalDTO
+    event_ids: list[str]
+    note_count: int
+    label: str
+
+
+class CadenceSummaryDTO(VisualizationModel):
+    cadence_id: str
+    bar: int
+    beat: RationalDTO
+    strength: CadenceStrengthDTO
+    final_interval: str
+    bass_motion: int | None
+    upper_motion: int | None
+    event_ids: list[str]
+    label: str
+    rationale: str
+
+
+class BassSupportDTO(VisualizationModel):
+    voice_id: str
+    bar_start: int
+    bar_end: int
+    unique_pitch_count: int
+    repeated_note_ratio: float
+    stepwise_motion_ratio: float
+    average_abs_motion: float
+    static_bars: list[int]
+    static_bass: bool
+    motion_label: BassMotionLabelDTO
+
+
+class CandidateAnalysisDTO(VisualizationModel):
+    phrases: list[PhraseSpanDTO]
+    cadence: CadenceSummaryDTO | None = None
+    bass_support: BassSupportDTO | None = None
+
+
 def _empty_repair_actions() -> list[RepairActionDTO]:
     return []
 
@@ -140,6 +185,7 @@ class CandidateVizDTO(VisualizationModel):
     transform: TransformVizDTO
     score: ScoreBreakdownDTO
     musicality: MusicalityBreakdownDTO | None = None
+    analysis: CandidateAnalysisDTO | None = None
     notes: list[NoteVizDTO]
     violations: list[ViolationVizDTO]
     repair_actions: list[RepairActionDTO] = Field(default_factory=_empty_repair_actions)

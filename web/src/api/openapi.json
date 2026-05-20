@@ -1,9 +1,207 @@
 {
   "components": {
     "schemas": {
+      "BassMotionLabelDTO": {
+        "enum": [
+          "static",
+          "stepwise",
+          "active"
+        ],
+        "type": "string"
+      },
+      "BassSupportDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "average_abs_motion": {
+            "title": "Average Abs Motion",
+            "type": "number"
+          },
+          "bar_end": {
+            "title": "Bar End",
+            "type": "integer"
+          },
+          "bar_start": {
+            "title": "Bar Start",
+            "type": "integer"
+          },
+          "motion_label": {
+            "$ref": "#/components/schemas/BassMotionLabelDTO"
+          },
+          "repeated_note_ratio": {
+            "title": "Repeated Note Ratio",
+            "type": "number"
+          },
+          "static_bars": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Static Bars",
+            "type": "array"
+          },
+          "static_bass": {
+            "title": "Static Bass",
+            "type": "boolean"
+          },
+          "stepwise_motion_ratio": {
+            "title": "Stepwise Motion Ratio",
+            "type": "number"
+          },
+          "unique_pitch_count": {
+            "title": "Unique Pitch Count",
+            "type": "integer"
+          },
+          "voice_id": {
+            "title": "Voice Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "voice_id",
+          "bar_start",
+          "bar_end",
+          "unique_pitch_count",
+          "repeated_note_ratio",
+          "stepwise_motion_ratio",
+          "average_abs_motion",
+          "static_bars",
+          "static_bass",
+          "motion_label"
+        ],
+        "title": "BassSupportDTO",
+        "type": "object"
+      },
+      "CadenceStrengthDTO": {
+        "enum": [
+          "strong",
+          "moderate",
+          "weak"
+        ],
+        "type": "string"
+      },
+      "CadenceSummaryDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bar": {
+            "title": "Bar",
+            "type": "integer"
+          },
+          "bass_motion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bass Motion"
+          },
+          "beat": {
+            "$ref": "#/components/schemas/RationalDTO"
+          },
+          "cadence_id": {
+            "title": "Cadence Id",
+            "type": "string"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "final_interval": {
+            "title": "Final Interval",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "strength": {
+            "$ref": "#/components/schemas/CadenceStrengthDTO"
+          },
+          "upper_motion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Motion"
+          }
+        },
+        "required": [
+          "cadence_id",
+          "bar",
+          "beat",
+          "strength",
+          "final_interval",
+          "bass_motion",
+          "upper_motion",
+          "event_ids",
+          "label",
+          "rationale"
+        ],
+        "title": "CadenceSummaryDTO",
+        "type": "object"
+      },
+      "CandidateAnalysisDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bass_support": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BassSupportDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cadence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CadenceSummaryDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phrases": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseSpanDTO"
+            },
+            "title": "Phrases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "phrases"
+        ],
+        "title": "CandidateAnalysisDTO",
+        "type": "object"
+      },
       "CandidateVizDTO": {
         "additionalProperties": false,
         "properties": {
+          "analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CandidateAnalysisDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "artifacts": {
             "additionalProperties": {
               "type": "string"
@@ -469,6 +667,56 @@
           "general_polish"
         ],
         "type": "string"
+      },
+      "PhraseSpanDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "bar_end": {
+            "title": "Bar End",
+            "type": "integer"
+          },
+          "bar_start": {
+            "title": "Bar Start",
+            "type": "integer"
+          },
+          "end_q": {
+            "$ref": "#/components/schemas/RationalDTO"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note_count": {
+            "title": "Note Count",
+            "type": "integer"
+          },
+          "phrase_id": {
+            "title": "Phrase Id",
+            "type": "string"
+          },
+          "start_q": {
+            "$ref": "#/components/schemas/RationalDTO"
+          }
+        },
+        "required": [
+          "phrase_id",
+          "bar_start",
+          "bar_end",
+          "start_q",
+          "end_q",
+          "event_ids",
+          "note_count",
+          "label"
+        ],
+        "title": "PhraseSpanDTO",
+        "type": "object"
       },
       "PolishObjectiveWeights": {
         "additionalProperties": false,

@@ -247,8 +247,63 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        BassMotionLabelDTO: "static" | "stepwise" | "active";
+        /** BassSupportDTO */
+        BassSupportDTO: {
+            /** Average Abs Motion */
+            average_abs_motion: number;
+            /** Bar End */
+            bar_end: number;
+            /** Bar Start */
+            bar_start: number;
+            motion_label: components["schemas"]["BassMotionLabelDTO"];
+            /** Repeated Note Ratio */
+            repeated_note_ratio: number;
+            /** Static Bars */
+            static_bars: number[];
+            /** Static Bass */
+            static_bass: boolean;
+            /** Stepwise Motion Ratio */
+            stepwise_motion_ratio: number;
+            /** Unique Pitch Count */
+            unique_pitch_count: number;
+            /** Voice Id */
+            voice_id: string;
+        };
+        /** @enum {string} */
+        CadenceStrengthDTO: "strong" | "moderate" | "weak";
+        /** CadenceSummaryDTO */
+        CadenceSummaryDTO: {
+            /** Bar */
+            bar: number;
+            /** Bass Motion */
+            bass_motion: number | null;
+            beat: components["schemas"]["RationalDTO"];
+            /** Cadence Id */
+            cadence_id: string;
+            /** Event Ids */
+            event_ids: string[];
+            /** Final Interval */
+            final_interval: string;
+            /** Label */
+            label: string;
+            /** Rationale */
+            rationale: string;
+            strength: components["schemas"]["CadenceStrengthDTO"];
+            /** Upper Motion */
+            upper_motion: number | null;
+        };
+        /** CandidateAnalysisDTO */
+        CandidateAnalysisDTO: {
+            bass_support?: components["schemas"]["BassSupportDTO"] | null;
+            cadence?: components["schemas"]["CadenceSummaryDTO"] | null;
+            /** Phrases */
+            phrases: components["schemas"]["PhraseSpanDTO"][];
+        };
         /** CandidateVizDTO */
         CandidateVizDTO: {
+            analysis?: components["schemas"]["CandidateAnalysisDTO"] | null;
             /** Artifacts */
             artifacts?: {
                 [key: string]: string;
@@ -388,6 +443,23 @@ export interface components {
         };
         /** @enum {string} */
         ObjectivePreset: "reduce_repetition" | "smooth_bass" | "strengthen_cadence" | "general_polish";
+        /** PhraseSpanDTO */
+        PhraseSpanDTO: {
+            /** Bar End */
+            bar_end: number;
+            /** Bar Start */
+            bar_start: number;
+            end_q: components["schemas"]["RationalDTO"];
+            /** Event Ids */
+            event_ids: string[];
+            /** Label */
+            label: string;
+            /** Note Count */
+            note_count: number;
+            /** Phrase Id */
+            phrase_id: string;
+            start_q: components["schemas"]["RationalDTO"];
+        };
         /** PolishObjectiveWeights */
         PolishObjectiveWeights: {
             /** Bass Smoothness Penalty */

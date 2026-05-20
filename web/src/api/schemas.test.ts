@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { FeedbackTranslationSchema, PolishResultSchema, RunSummarySchema } from './schemas'
+import {
+  CandidateAnalysisSchema,
+  FeedbackTranslationSchema,
+  PolishResultSchema,
+  RunSummarySchema,
+} from './schemas'
 
 describe('RunSummarySchema', () => {
   it('validates the visualization payload contract', () => {
@@ -188,5 +193,50 @@ describe('FeedbackTranslationSchema', () => {
 
     const translation = FeedbackTranslationSchema.parse(payload)
     expect(translation.actions[0].request.rewrite_voice).toBe('follower')
+  })
+})
+
+describe('CandidateAnalysisSchema', () => {
+  it('validates phrase cadence and bass-support summaries', () => {
+    const analysis = CandidateAnalysisSchema.parse({
+      phrases: [
+        {
+          phrase_id: 'phrase-01',
+          bar_start: 1,
+          bar_end: 2,
+          start_q: { text: '0', value: 0 },
+          end_q: { text: '8', value: 8 },
+          event_ids: ['leader:l1'],
+          note_count: 8,
+          label: 'Bars 1-2',
+        },
+      ],
+      cadence: {
+        cadence_id: 'final-cadence',
+        bar: 2,
+        beat: { text: '1', value: 1 },
+        strength: 'weak',
+        final_interval: 'P8',
+        bass_motion: 0,
+        upper_motion: -2,
+        event_ids: ['leader:l2', 'follower:f2'],
+        label: 'Weak final cadence',
+        rationale: 'Weak cadence: final interval P8, bass motion +0.',
+      },
+      bass_support: {
+        voice_id: 'follower',
+        bar_start: 1,
+        bar_end: 2,
+        unique_pitch_count: 1,
+        repeated_note_ratio: 1,
+        stepwise_motion_ratio: 0,
+        average_abs_motion: 0,
+        static_bars: [1, 2],
+        static_bass: true,
+        motion_label: 'static',
+      },
+    })
+
+    expect(analysis.bass_support?.motion_label).toBe('static')
   })
 })

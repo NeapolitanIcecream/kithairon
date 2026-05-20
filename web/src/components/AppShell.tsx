@@ -14,6 +14,7 @@ import {
 import type { CandidateViz, RepairAction, RunSummary, ViolationViz } from '../api/schemas'
 import type { Experiment } from '../api/schemas'
 import { listExperiments } from '../api/runs'
+import { AnalysisPanel } from './AnalysisPanel'
 import { CandidateLabPanel } from './CandidateLabPanel'
 import { CandidateTable } from './CandidateTable'
 import { CompareView } from './CompareView'
@@ -316,6 +317,9 @@ export function KithaironAppShell() {
                 />
                 <Box mt="md">
                   <MusicalityBreakdown musicality={selectedCandidate.musicality} />
+                </Box>
+                <Box mt="md">
+                  <AnalysisPanel analysis={selectedCandidate.analysis} />
                 </Box>
               </Box>
             ) : null}

@@ -111,6 +111,49 @@ export const TransformVizSchema = z.object({
   rhythm_scale: z.string().nullable(),
 })
 
+export const PhraseSpanSchema = z.object({
+  phrase_id: z.string(),
+  bar_start: z.number().int(),
+  bar_end: z.number().int(),
+  start_q: RationalSchema,
+  end_q: RationalSchema,
+  event_ids: z.array(z.string()),
+  note_count: z.number().int(),
+  label: z.string(),
+})
+
+export const CadenceSummarySchema = z.object({
+  cadence_id: z.string(),
+  bar: z.number().int(),
+  beat: RationalSchema,
+  strength: z.enum(['strong', 'moderate', 'weak']),
+  final_interval: z.string(),
+  bass_motion: z.number().int().nullable(),
+  upper_motion: z.number().int().nullable(),
+  event_ids: z.array(z.string()),
+  label: z.string(),
+  rationale: z.string(),
+})
+
+export const BassSupportSchema = z.object({
+  voice_id: z.string(),
+  bar_start: z.number().int(),
+  bar_end: z.number().int(),
+  unique_pitch_count: z.number().int(),
+  repeated_note_ratio: z.number(),
+  stepwise_motion_ratio: z.number(),
+  average_abs_motion: z.number(),
+  static_bars: z.array(z.number().int()),
+  static_bass: z.boolean(),
+  motion_label: z.enum(['static', 'stepwise', 'active']),
+})
+
+export const CandidateAnalysisSchema = z.object({
+  phrases: z.array(PhraseSpanSchema),
+  cadence: CadenceSummarySchema.nullable().optional(),
+  bass_support: BassSupportSchema.nullable().optional(),
+})
+
 export const CandidateVizSchema = z.object({
   candidate_id: z.string(),
   rank: z.number().int().nullable(),
@@ -118,6 +161,7 @@ export const CandidateVizSchema = z.object({
   transform: TransformVizSchema,
   score: ScoreBreakdownSchema,
   musicality: MusicalityBreakdownSchema.nullable().optional(),
+  analysis: CandidateAnalysisSchema.nullable().optional(),
   notes: z.array(NoteVizSchema),
   violations: z.array(ViolationVizSchema),
   repair_actions: z.array(RepairActionSchema),
@@ -234,6 +278,10 @@ export type MusicalityMetric = z.infer<typeof MusicalityMetricSchema>
 export type MusicalityBreakdown = z.infer<typeof MusicalityBreakdownSchema>
 export type RepairAction = z.infer<typeof RepairActionSchema>
 export type TransformViz = z.infer<typeof TransformVizSchema>
+export type PhraseSpan = z.infer<typeof PhraseSpanSchema>
+export type CadenceSummary = z.infer<typeof CadenceSummarySchema>
+export type BassSupport = z.infer<typeof BassSupportSchema>
+export type CandidateAnalysis = z.infer<typeof CandidateAnalysisSchema>
 export type CandidateViz = z.infer<typeof CandidateVizSchema>
 export type RunSummary = z.infer<typeof RunSummarySchema>
 export type LockVoice = z.infer<typeof LockVoiceSchema>

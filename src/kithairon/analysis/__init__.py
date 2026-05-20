@@ -1,6 +1,10 @@
 """Analysis helpers for timeline, vertical interval, and voice-leading views."""
 
+from kithairon.analysis.bass import BassMotionLabel, BassSupportSummary, summarize_bass_support
+from kithairon.analysis.cadence import CadenceStrength, CadenceSummary, summarize_cadence
+from kithairon.analysis.composition import CompositionAnalysis, analyze_composition
 from kithairon.analysis.context import AnalysisContext, analyze_candidate
+from kithairon.analysis.phrasing import PhraseSpan, build_phrase_spans
 from kithairon.analysis.timeline import (
     BeatStrength,
     TimeSignatureInfo,
@@ -16,14 +20,24 @@ from kithairon.analysis.voice_leading import (
 
 __all__ = [
     "AnalysisContext",
+    "BassMotionLabel",
+    "BassSupportSummary",
     "BeatStrength",
+    "CadenceStrength",
+    "CadenceSummary",
+    "CompositionAnalysis",
+    "PhraseSpan",
     "TimeSignatureInfo",
     "TimeSlice",
     "Verticality",
     "VoiceLeadingQuartetAnalysis",
     "analyze_candidate",
+    "analyze_composition",
+    "build_phrase_spans",
     "build_time_slices",
     "build_verticalities",
     "build_voice_leading_quartets",
     "parse_time_signature",
+    "summarize_bass_support",
+    "summarize_cadence",
 ]

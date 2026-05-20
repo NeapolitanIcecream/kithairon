@@ -6,14 +6,19 @@ from collections.abc import Mapping
 from fractions import Fraction
 from typing import cast
 
+from kithairon.analysis.composition import analyze_composition
 from kithairon.analysis.timeline import parse_time_signature
 from kithairon.ir import CanonCandidate, NoteEvent, RuleViolation, Voice
 from kithairon.scoring.musicality import MusicalityBreakdown, compute_musicality
 from kithairon.visualization.models import (
+    BassSupportDTO,
+    CadenceSummaryDTO,
+    CandidateAnalysisDTO,
     CandidateVizDTO,
     MusicalityBreakdownDTO,
     MusicalityMetricDTO,
     NoteVizDTO,
+    PhraseSpanDTO,
     RationalDTO,
     RepairActionDTO,
     RepairActionKindDTO,
@@ -61,6 +66,7 @@ def materialize_candidate(
         transform=_transform_viz(candidate),
         score=_score_breakdown(candidate),
         musicality=_musicality_breakdown(compute_musicality(candidate)),
+        analysis=_candidate_analysis(candidate),
         notes=notes,
         violations=[
             _violation_viz(candidate, violation, index)
@@ -251,6 +257,57 @@ def _musicality_breakdown(breakdown: MusicalityBreakdown) -> MusicalityBreakdown
         raw_values=dict(breakdown.raw_values),
         normalized_values=dict(breakdown.normalized_values),
         weights=dict(breakdown.weights),
+    )
+
+
+def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
+    analysis = analyze_composition(candidate)
+    return CandidateAnalysisDTO(
+        phrases=[
+            PhraseSpanDTO(
+                phrase_id=phrase.phrase_id,
+                bar_start=phrase.bar_start,
+                bar_end=phrase.bar_end,
+                start_q=rational_dto(phrase.start),
+                end_q=rational_dto(phrase.end),
+                event_ids=list(phrase.event_ids),
+                note_count=phrase.note_count,
+                label=phrase.label,
+            )
+            for phrase in analysis.phrases
+        ],
+        cadence=(
+            CadenceSummaryDTO(
+                cadence_id=analysis.cadence.cadence_id,
+                bar=analysis.cadence.bar,
+                beat=rational_dto(analysis.cadence.beat),
+                strength=analysis.cadence.strength,
+                final_interval=analysis.cadence.final_interval,
+                bass_motion=analysis.cadence.bass_motion,
+                upper_motion=analysis.cadence.upper_motion,
+                event_ids=list(analysis.cadence.event_ids),
+                label=analysis.cadence.label,
+                rationale=analysis.cadence.rationale,
+            )
+            if analysis.cadence is not None
+            else None
+        ),
+        bass_support=(
+            BassSupportDTO(
+                voice_id=analysis.bass_support.voice_id,
+                bar_start=analysis.bass_support.bar_start,
+                bar_end=analysis.bass_support.bar_end,
+                unique_pitch_count=analysis.bass_support.unique_pitch_count,
+                repeated_note_ratio=analysis.bass_support.repeated_note_ratio,
+                stepwise_motion_ratio=analysis.bass_support.stepwise_motion_ratio,
+                average_abs_motion=analysis.bass_support.average_abs_motion,
+                static_bars=list(analysis.bass_support.static_bars),
+                static_bass=analysis.bass_support.static_bass,
+                motion_label=analysis.bass_support.motion_label,
+            )
+            if analysis.bass_support is not None
+            else None
+        ),
     )
 
 

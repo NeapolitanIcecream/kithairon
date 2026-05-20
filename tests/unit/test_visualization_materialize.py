@@ -161,6 +161,22 @@ def test_materialize_candidate_attaches_musicality_breakdown() -> None:
     }
 
 
+def test_materialize_candidate_attaches_composition_analysis() -> None:
+    dto = materialize_candidate(
+        _candidate(
+            follower_events=(
+                NoteEvent(id="n0001", pitch=48, start=Fraction(0), duration=Fraction(1)),
+                NoteEvent(id="n0002", pitch=48, start=Fraction(1), duration=Fraction(1)),
+            )
+        )
+    )
+
+    assert dto.analysis is not None
+    assert dto.analysis.phrases[0].bar_start == 1
+    assert dto.analysis.bass_support is not None
+    assert dto.analysis.bass_support.static_bass is True
+
+
 def _candidate(
     *,
     follower_events: tuple[NoteEvent, ...] | None = None,
