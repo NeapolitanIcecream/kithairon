@@ -16,6 +16,8 @@ The source theme:
 
 ![Source theme for the one-minute demo](docs/assets/demo/one-minute-source-theme.png)
 
+Listen to the source theme: [MP3](docs/assets/demo/one-minute-source-theme.mp3) or open the [MusicXML score](docs/assets/demo/one-minute-source-theme.musicxml).
+
 The finished piece:
 
 ![Final one-minute two-voice piece](docs/assets/demo/one-minute-composition.png)

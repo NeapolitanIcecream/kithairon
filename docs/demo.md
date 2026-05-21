@@ -12,9 +12,15 @@ stopping at the first generated canon candidate.
 
 The seed melody is a short monophonic theme prepared for the browser workflow.
 
+<audio controls preload="metadata">
+  <source src="../assets/demo/one-minute-source-theme.mp3" type="audio/mpeg">
+  <a href="../assets/demo/one-minute-source-theme.mp3">Download the source theme MP3.</a>
+</audio>
+
 ![Source theme for the one-minute demo](assets/demo/one-minute-source-theme.png)
 
 - [MusicXML](assets/demo/one-minute-source-theme.musicxml)
+- [MP3](assets/demo/one-minute-source-theme.mp3)
 
 ## Final One-Minute Piece
 

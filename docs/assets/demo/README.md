@@ -3,6 +3,7 @@
 The current README and docs demo use the `one-minute-*` assets in this directory:
 
 - `one-minute-source-theme.musicxml`
+- `one-minute-source-theme.mp3`
 - `one-minute-source-theme.png`
 - `one-minute-composition.musicxml`
 - `one-minute-composition.mid`
