@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { CandidateViz, Experiment } from '../api/schemas'
 import {
   candidateSource,
@@ -17,7 +17,13 @@ describe('mergeCandidateUniverse', () => {
       source_request: { bar_start: 1, bar_end: 1 },
       created_at: '2026-05-20T00:00:00Z',
       notes: '',
-      variants: [{ candidate_id: variant.candidate_id, status: 'undecided', candidate: variant }],
+      variants: [
+        {
+          candidate_id: variant.candidate_id,
+          status: 'undecided',
+          candidate: variant,
+        },
+      ],
     }
 
     const merged = mergeCandidateUniverse([base], [experiment])
@@ -30,6 +36,39 @@ describe('mergeCandidateUniverse', () => {
     expect(candidateSource(merged[1])).toBe('experiment')
     expect(sourceExperimentId(merged[1])).toBe('experiment-0001')
     expect(parentCandidateId(merged[1])).toBe('strict_0001')
+  })
+
+  it('keeps the first candidate and reports duplicate ids', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const base = candidateFixture('strict_0001')
+    const duplicate = {
+      ...candidateFixture('strict_0001'),
+      title: 'Duplicate',
+    }
+    const experiment: Experiment = {
+      experiment_id: 'experiment-0001',
+      source_candidate_id: base.candidate_id,
+      source_request: { bar_start: 1, bar_end: 1 },
+      created_at: '2026-05-20T00:00:00Z',
+      notes: '',
+      variants: [
+        {
+          candidate_id: duplicate.candidate_id,
+          status: 'undecided',
+          candidate: duplicate,
+        },
+      ],
+    }
+
+    const merged = mergeCandidateUniverse([base], [experiment])
+
+    expect(merged).toHaveLength(1)
+    expect(merged[0].title).toBe('strict_0001')
+    expect(warn).toHaveBeenCalledWith(
+      'Duplicate candidate id ignored while merging candidate universe.',
+      { candidateId: 'strict_0001', sourceExperimentId: 'experiment-0001' },
+    )
+    warn.mockRestore()
   })
 })
 

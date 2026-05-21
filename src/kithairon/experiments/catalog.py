@@ -69,6 +69,7 @@ def load_candidate_catalog(run_dir: Path) -> CandidateCatalog:
                     parent_candidate_id=parent_candidate_id or experiment.source_candidate_id,
                 )
             )
+    _assert_unique_candidate_ids(run.run_id, entries)
     return CandidateCatalog(run_id=run.run_id, entries=tuple(entries))
 
 
@@ -95,6 +96,22 @@ def _entry(
         source_experiment_id=source_experiment_id,
         parent_candidate_id=parent_candidate_id,
     )
+
+
+def _assert_unique_candidate_ids(run_id: str, entries: list[CandidateCatalogEntry]) -> None:
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for entry in entries:
+        candidate_id = entry.candidate.candidate_id
+        if candidate_id in seen and candidate_id not in duplicates:
+            duplicates.append(candidate_id)
+        seen.add(candidate_id)
+    if duplicates:
+        raise OutputError(
+            "Duplicate candidate id found while loading candidate catalog.",
+            code="duplicate_candidate_id",
+            details={"run_id": run_id, "candidate_ids": duplicates},
+        )
 
 
 def _read_run_summary(run_dir: Path) -> RunSummaryDTO:

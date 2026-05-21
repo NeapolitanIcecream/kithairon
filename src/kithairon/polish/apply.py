@@ -30,6 +30,7 @@ def polish_candidate_dto(
     *,
     score_profile: str = "pop-lite",
     quality: QualityConfig | None = None,
+    request_token: str = "r001",
 ) -> PolishResultDTO:
     candidate = candidate_from_dto(candidate_dto)
     variants = search_polish_variants(
@@ -37,6 +38,7 @@ def polish_candidate_dto(
         request,
         score_profile=score_profile,
         quality=quality,
+        request_token=request_token,
     )
     rewrite_voice = _result_rewrite_voice(variants, request, candidate_dto)
     result_candidates = [materialize_candidate(variant) for variant in variants]

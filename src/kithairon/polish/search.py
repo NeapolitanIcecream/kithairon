@@ -9,6 +9,7 @@ from typing import cast
 from kithairon.analysis.timeline import parse_time_signature
 from kithairon.config import QualityConfig
 from kithairon.ir import CanonCandidate, Voice, VoiceRole
+from kithairon.polish.ids import derived_candidate_id
 from kithairon.polish.models import PolishRequest
 from kithairon.polish.objective import evaluate_objective
 from kithairon.scoring import compute_musicality, score_candidate
@@ -20,6 +21,7 @@ def search_polish_variants(
     *,
     score_profile: str = "pop-lite",
     quality: QualityConfig | None = None,
+    request_token: str = "r001",
 ) -> tuple[CanonCandidate, ...]:
     """Return ranked local pitch-substitution variants without mutating the parent."""
     rewrite_role = _resolve_rewrite_role(request)
@@ -71,7 +73,12 @@ def search_polish_variants(
 
     ranked = _rank_scored(scored)
     return tuple(
-        _finalize_ranked_variant(parent_id=candidate.id, rank=rank, candidate=item[0])
+        _finalize_ranked_variant(
+            parent_id=candidate.id,
+            rank=rank,
+            candidate=item[0],
+            request_token=request_token,
+        )
         for rank, item in enumerate(ranked[: request.max_variants], start=1)
     )
 
@@ -279,12 +286,14 @@ def _finalize_ranked_variant(
     parent_id: str,
     rank: int,
     candidate: CanonCandidate,
+    request_token: str = "r001",
 ) -> CanonCandidate:
     return replace(
         candidate,
-        id=f"{parent_id}_polish_{rank:03d}",
+        id=derived_candidate_id(parent_id, request_token, rank),
         metadata={
             **candidate.metadata,
             "rank": rank,
+            "polish_request_token": request_token,
         },
     )

@@ -4,6 +4,9 @@ import json
 from fractions import Fraction
 from pathlib import Path
 
+import pytest
+
+from kithairon.errors import OutputError
 from kithairon.experiments.store import create_experiment, list_experiments, patch_experiment
 from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformSpec, Voice
 from kithairon.polish.models import PolishRequest
@@ -53,6 +56,39 @@ def test_experiment_store_persists_variants_notes_and_relative_artifacts(tmp_pat
         artifact_index["candidates"][candidate.candidate_id]["musicxml"]
         == stored_artifacts["musicxml"]
     )
+
+
+def test_experiment_store_reports_artifact_registration_collision(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run-1"
+    run_dir.mkdir()
+    (run_dir / "artifact_index.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-1",
+                "root": str(run_dir),
+                "run_artifacts": {},
+                "candidates": {
+                    "strict_0001__polish__r001__001": {
+                        "musicxml": "experiments/experiment-9999/candidates/variant.musicxml"
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    candidate = materialize_candidate(_candidate("strict_0001__polish__r001__001"))
+    request = PolishRequest(bar_start=1, bar_end=1, lock_voice="leader")
+
+    with pytest.raises(OutputError) as exc_info:
+        create_experiment(
+            run_dir,
+            source_candidate_id="strict_0001",
+            source_request=request.model_dump(mode="json"),
+            candidates=[candidate],
+        )
+
+    assert exc_info.value.diagnostic.code == "candidate_artifact_registration_failed"
+    assert exc_info.value.diagnostic.details["candidate_id"] == candidate.candidate_id
 
 
 def _candidate(candidate_id: str) -> CanonCandidate:

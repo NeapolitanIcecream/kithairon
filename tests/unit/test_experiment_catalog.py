@@ -4,6 +4,9 @@ import json
 from fractions import Fraction
 from pathlib import Path
 
+import pytest
+
+from kithairon.errors import OutputError
 from kithairon.experiments.catalog import load_candidate_catalog
 from kithairon.experiments.store import create_experiment
 from kithairon.ir import CanonCandidate, Melody, NoteEvent, TransformSpec, Voice
@@ -48,6 +51,26 @@ def test_candidate_catalog_merges_run_candidates_and_experiment_variants(
     assert catalog.get("strict_0001_polish_001").candidate.candidate_id == (
         "strict_0001_polish_001"
     )
+
+
+def test_candidate_catalog_rejects_duplicate_candidate_ids(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run-1"
+    run_dir.mkdir()
+    _write_artifact_index(run_dir)
+    base = materialize_candidate(_candidate("strict_0001"))
+    duplicate_variant = materialize_candidate(
+        _candidate("strict_0001", parent_candidate_id="strict_0001")
+    )
+    _write_visualization(run_dir, [base])
+    create_experiment(
+        run_dir,
+        source_candidate_id=base.candidate_id,
+        source_request={"bar_start": 1, "bar_end": 1},
+        candidates=[duplicate_variant],
+    )
+
+    with pytest.raises(OutputError, match="Duplicate candidate id"):
+        load_candidate_catalog(run_dir)
 
 
 def _write_visualization(run_dir: Path, candidates: list[CandidateVizDTO]) -> None:

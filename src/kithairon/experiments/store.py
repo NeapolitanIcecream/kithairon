@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from kithairon.errors import OutputError
 from kithairon.export import write_candidate_exports
 from kithairon.polish.apply import candidate_from_dto
-from kithairon.visualization.artifact_index import register_candidate_artifacts
+from kithairon.visualization.artifact_index import ArtifactIndexError, register_candidate_artifacts
 from kithairon.visualization.materialize import materialize_candidate
 from kithairon.visualization.models import (
     CandidateVizDTO,
@@ -101,7 +101,18 @@ def _persist_candidate(
         "musicxml": str(paths.musicxml.relative_to(run_dir)),
         "midi": str(paths.midi.relative_to(run_dir)),
     }
-    register_candidate_artifacts(run_dir / "artifact_index.json", candidate.candidate_id, artifacts)
+    try:
+        register_candidate_artifacts(
+            run_dir / "artifact_index.json",
+            candidate.candidate_id,
+            artifacts,
+        )
+    except ArtifactIndexError as exc:
+        raise OutputError(
+            "Candidate artifacts could not be registered.",
+            code="candidate_artifact_registration_failed",
+            details={"candidate_id": candidate.candidate_id, "error": str(exc)},
+        ) from exc
     return materialize_candidate(
         replace(
             core_candidate,

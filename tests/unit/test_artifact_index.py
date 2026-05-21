@@ -123,6 +123,49 @@ def test_register_candidate_artifacts_adds_safe_relative_paths(tmp_path: Path) -
     )
 
 
+def test_register_candidate_artifacts_rejects_different_duplicate_candidate(
+    tmp_path: Path,
+) -> None:
+    index_path = _write_index(
+        tmp_path,
+        {
+            "run_artifacts": {},
+            "candidates": {
+                "strict_0001__polish__r001__001": {
+                    "musicxml": "experiments/experiment-0001/candidates/variant.musicxml"
+                }
+            },
+        },
+    )
+
+    with pytest.raises(ArtifactIndexError, match="already registered"):
+        register_candidate_artifacts(
+            index_path,
+            "strict_0001__polish__r001__001",
+            {"musicxml": "experiments/experiment-0002/candidates/variant.musicxml"},
+        )
+
+
+def test_register_candidate_artifacts_allows_idempotent_duplicate_registration(
+    tmp_path: Path,
+) -> None:
+    artifacts = {"musicxml": "experiments/experiment-0001/candidates/variant.musicxml"}
+    index_path = _write_index(
+        tmp_path,
+        {
+            "run_artifacts": {},
+            "candidates": {"strict_0001__polish__r001__001": artifacts},
+        },
+    )
+
+    register_candidate_artifacts(index_path, "strict_0001__polish__r001__001", artifacts)
+
+    assert (
+        resolve_candidate_artifact(index_path, "strict_0001__polish__r001__001", "musicxml")
+        == tmp_path / "experiments" / "experiment-0001" / "candidates" / "variant.musicxml"
+    )
+
+
 def _write_index(tmp_path: Path, payload: dict[str, object]) -> Path:
     index_path = tmp_path / "artifact_index.json"
     index_path.write_text(json.dumps({"run_id": "run-1", "root": str(tmp_path), **payload}))

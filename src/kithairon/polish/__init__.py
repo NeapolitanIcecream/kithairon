@@ -1,6 +1,7 @@
 """Local phrase polish helpers."""
 
 from kithairon.polish.apply import polish_candidate_dto
+from kithairon.polish.ids import allocate_polish_request_token, derived_candidate_id
 from kithairon.polish.models import (
     BarRange,
     LockVoice,
@@ -25,6 +26,8 @@ __all__ = [
     "PolishSummaryDTO",
     "RewriteVoice",
     "SearchMode",
+    "allocate_polish_request_token",
+    "derived_candidate_id",
     "polish_candidate_dto",
     "polish_run_candidate",
     "search_polish_variants",

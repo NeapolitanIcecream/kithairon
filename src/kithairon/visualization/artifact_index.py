@@ -99,10 +99,26 @@ def register_candidate_artifacts(
     """Register a candidate artifact entry in an existing artifact index."""
     index = dict(load_artifact_index(index_path))
     candidates = dict(_object_mapping(index.get("candidates")))
-    candidate: dict[str, object] = dict(_object_mapping(candidates.get(candidate_id)))
+    existing_candidate = dict(_object_mapping(candidates.get(candidate_id)))
+    candidate: dict[str, object] = dict(existing_candidate)
     for kind, relative_path in artifacts.items():
         _resolve_relative_artifact(index_path.parent, relative_path)
+        existing_path = candidate.get(kind)
+        if existing_path is not None and existing_path != relative_path:
+            raise ArtifactIndexError(
+                f"Candidate artifact entry is already registered: {candidate_id}"
+            )
         candidate[kind] = relative_path
+    if existing_candidate and candidate != existing_candidate:
+        changed = {
+            key
+            for key, value in candidate.items()
+            if existing_candidate.get(key) not in {None, value}
+        }
+        if changed:
+            raise ArtifactIndexError(
+                f"Candidate artifact entry is already registered: {candidate_id}"
+            )
     candidates[candidate_id] = candidate
     index["candidates"] = candidates
     index_path.write_text(

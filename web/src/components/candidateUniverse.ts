@@ -6,10 +6,23 @@ export function mergeCandidateUniverse(
 ): CandidateViz[] {
   const merged = new Map<string, CandidateViz>()
   for (const candidate of runCandidates) {
-    merged.set(candidate.candidate_id, withProvenance(candidate, 'run', null, null))
+    merged.set(
+      candidate.candidate_id,
+      withProvenance(candidate, 'run', null, null),
+    )
   }
   for (const experiment of experiments) {
     for (const variant of experiment.variants) {
+      if (merged.has(variant.candidate.candidate_id)) {
+        console.warn(
+          'Duplicate candidate id ignored while merging candidate universe.',
+          {
+            candidateId: variant.candidate.candidate_id,
+            sourceExperimentId: experiment.experiment_id,
+          },
+        )
+        continue
+      }
       const parentCandidateId =
         stringOrNull(variant.candidate.metadata.parent_candidate_id) ??
         experiment.source_candidate_id

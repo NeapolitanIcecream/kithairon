@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from kithairon.config import load_config
 from kithairon.errors import KithaironError, PolishError
 from kithairon.polish.apply import polish_candidate_dto
+from kithairon.polish.ids import allocate_polish_request_token
 from kithairon.polish.models import PolishRequest, PolishResultDTO
 from kithairon.visualization.models import CandidateVizDTO, RunSummaryDTO
 
@@ -23,11 +24,13 @@ def polish_run_candidate(
     candidate = _catalog_candidate(run_dir, candidate_id)
     config_path = run_dir / "resolved_config.toml"
     config = load_config(config_path if config_path.exists() else None)
+    request_token = allocate_polish_request_token(run_dir, parent_id=candidate.candidate_id)
     return polish_candidate_dto(
         candidate,
         request,
         score_profile=config.scoring.profile,
         quality=config.quality,
+        request_token=request_token,
     )
 
 
