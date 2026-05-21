@@ -1,11 +1,17 @@
 # Demo Preview Assets
 
-These assets are generated from `examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml`, a longer monophonic incipit derived from the public-domain BWV 846 entry shipped in the music21 corpus.
+The current README and docs demo use the `one-minute-*` assets in this directory:
 
-The main README preview uses `output-repair-inversion-delay4.*`. In an external listening pass over the retained demo candidates, this relaxed repair candidate was the most pleasant clip even though it does not have the highest internal rule score.
+- `one-minute-source-theme.musicxml`
+- `one-minute-source-theme.png`
+- `one-minute-composition.musicxml`
+- `one-minute-composition.mid`
+- `one-minute-composition.mp3`
+- `one-minute-composition.png`
 
-Other retained outputs:
+These files represent the composition-assist case study featured in the docs: a short monophonic
+theme expanded into a one-minute two-voice piece through iterative local polish and fixed-voice
+rewrites.
 
-- `output-strict-transposition-delay4.*`: the best strict fallback and the clearest no-edit comparison point.
-- `output-strict-transposition-delay8.*`: another high-scoring strict candidate with a wider delay.
-- `score-breakdown-repair.png`: cropped from the repair winner so the README breakdown matches the main audio preview.
+Legacy Bach-derived preview assets are still present in this directory for reference, but they are
+no longer the primary README or docs demo.

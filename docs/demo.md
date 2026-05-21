@@ -1,69 +1,44 @@
 # Demo
 
-This demo uses `examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml`, a two-measure monophonic incipit derived from the public-domain BWV 846 entry shipped in the music21 corpus.
+This page shows a one-minute composition-assist case study. It starts from a short monophonic
+theme and ends at a complete two-voice piece after local polish, fixed-voice rewrites, and
+analysis-guided iteration.
 
-Run the same example locally:
+This is not presented as a one-command strict or repair engine result. It is a preview of what
+the current composition-assist workflow can be pushed toward when you keep iterating instead of
+stopping at the first generated canon candidate.
 
-```bash
-uv run canonize generate examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml \
-  --out tmp/demo \
-  --engine repair \
-  --top-k 12
-```
+## Source Theme
 
-The selected preview is the rank 1 repair candidate from this run: repaired inversion, delay 4, score 86.0. In a listening pass over the retained demo candidates, it was the most pleasant clip even though a stricter transposition candidate scored higher under Kithairon's rule penalties.
+The seed melody is a short monophonic theme prepared for the browser workflow.
 
-## Input
+![Source theme for the one-minute demo](assets/demo/one-minute-source-theme.png)
 
-![Input score: Bach BWV 846 upper-voice incipit](assets/demo/input-score.png)
+- [MusicXML](assets/demo/one-minute-source-theme.musicxml)
 
-## Selected Repair Candidate
+## Final One-Minute Piece
 
-<audio controls preload="metadata">
-  <source src="../assets/demo/output-repair-inversion-delay4.mp3" type="audio/mpeg">
-  <a href="../assets/demo/output-repair-inversion-delay4.mp3">Download the selected repair candidate MP3.</a>
-</audio>
-
-![Generated relaxed canon score: repaired inversion](assets/demo/output-score-repair-inversion.png)
-
-- [MusicXML](assets/demo/output-repair-inversion-delay4.musicxml)
-- [MIDI](assets/demo/output-repair-inversion-delay4.mid)
-- [MP3](assets/demo/output-repair-inversion-delay4.mp3)
-
-The score breakdown shows why this relaxed candidate still pays weak-beat dissonance penalties under the current scoring model.
-
-![Score breakdown with weak-beat dissonance penalties](assets/demo/score-breakdown-repair.png)
-
-## Strict Comparison
-
-The best strict fallback keeps the follower as an exact transposition transform with delay 4.
+The finished score runs for 18 bars in 4/4 at 72 BPM, for exactly 60.0 seconds of score time.
+The local counterpoint audit for this retained version ended at `100 / 100` with `0` rule
+violations.
 
 <audio controls preload="metadata">
-  <source src="../assets/demo/output-strict-transposition-delay4.mp3" type="audio/mpeg">
-  <a href="../assets/demo/output-strict-transposition-delay4.mp3">Download the strict transposition delay 4 MP3.</a>
+  <source src="../assets/demo/one-minute-composition.mp3" type="audio/mpeg">
+  <a href="../assets/demo/one-minute-composition.mp3">Download the one-minute composition MP3.</a>
 </audio>
 
-![Generated strict canon score: transposition delay 4](assets/demo/output-score-strict-transposition.png)
+![Final one-minute two-voice piece](assets/demo/one-minute-composition.png)
 
-- [MusicXML](assets/demo/output-strict-transposition-delay4.musicxml)
-- [MIDI](assets/demo/output-strict-transposition-delay4.mid)
-- [MP3](assets/demo/output-strict-transposition-delay4.mp3)
+- [MusicXML](assets/demo/one-minute-composition.musicxml)
+- [MIDI](assets/demo/one-minute-composition.mid)
+- [MP3](assets/demo/one-minute-composition.mp3)
 
-The second retained strict candidate uses a wider delay.
+## What This Demo Shows
 
-<audio controls preload="metadata">
-  <source src="../assets/demo/output-strict-transposition-delay8.mp3" type="audio/mpeg">
-  <a href="../assets/demo/output-strict-transposition-delay8.mp3">Download the strict transposition delay 8 MP3.</a>
-</audio>
+- Kithairon is still a canon-focused generator, but the browser workflow can keep refining a
+  candidate past the first usable output.
+- Fixed-voice invention is useful when the next improvement is in one line, not the whole texture.
+- Analysis findings are most useful when they become editing actions, not just diagnostics.
 
-![Generated strict canon score: transposition delay 8](assets/demo/output-score-strict-transposition-delay8.png)
-
-- [MusicXML](assets/demo/output-strict-transposition-delay8.musicxml)
-- [MIDI](assets/demo/output-strict-transposition-delay8.mid)
-- [MP3](assets/demo/output-strict-transposition-delay8.mp3)
-
-## Web View
-
-Start the visualization API and frontend as described in [Visualization](visualization.md), then upload `examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml`.
-
-![Kithairon web UI showing the selected repair candidate](assets/demo/web-ui-repair-inversion.png)
+See [Visualization](visualization.md) for the browser workflow that supports this style of
+iteration, and see the repository README for direct CLI generation examples.

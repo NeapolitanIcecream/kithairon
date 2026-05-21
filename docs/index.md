@@ -21,7 +21,8 @@ Each generation run writes:
 
 ## Demo
 
-The [Demo](demo.md) page includes the Bach-derived preview from commit `7060228`, with embedded MP3 players for the selected repair candidate and two strict comparison candidates.
+The [Demo](demo.md) page now shows a one-minute composition-assist preview, starting from a short
+source theme and ending at a complete two-voice piece with embedded audio and score assets.
 
 ## Supported Input
 

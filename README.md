@@ -6,41 +6,30 @@ Use it from the `canonize` CLI with MIDI or MusicXML input. Each generation run 
 
 Read the hosted documentation at <https://kithairon-docs.pages.dev>.
 
-## 30-Second Demo
+## One-Minute Demo
 
-Run Kithairon on a longer Bach-derived MusicXML fragment:
+This preview shows the composition-assist side of Kithairon rather than a single strict or repair run.
+It starts from a short monophonic source theme and ends at a one-minute two-voice piece produced
+through local polish, fixed-voice rewrites, and repeated analysis-guided passes.
 
-```bash
-uv run canonize generate examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml \
-  --out tmp/demo \
-  --engine repair \
-  --top-k 12
-```
+The source theme:
 
-The input is a two-measure monophonic incipit derived from the public-domain BWV 846 entry shipped in the music21 corpus. The generated output includes playable canon candidates with:
+![Source theme for the one-minute demo](docs/assets/demo/one-minute-source-theme.png)
 
-- `tmp/demo/candidates/*.musicxml`: a score you can open in a notation editor.
-- `tmp/demo/candidates/*.mid`: a playable MIDI file.
-- `tmp/demo/report.md`: the score summary and rule penalties.
-- `tmp/demo/visualization.json`: data for the web visualization.
+The finished piece:
 
-The preview below uses the rank 1 repair candidate from this run: repaired inversion, delay 4, score 86.0. In an external listening pass over the main demo candidates, this was the most pleasant clip even though a stricter transposition candidate scored higher under Kithairon's rule penalties.
+![Final one-minute two-voice piece](docs/assets/demo/one-minute-composition.png)
 
-![Input score: Bach BWV 846 upper-voice incipit](docs/assets/demo/input-score.png)
+Listen to the final result: [MP3](docs/assets/demo/one-minute-composition.mp3), [MIDI](docs/assets/demo/one-minute-composition.mid), or open the [MusicXML score](docs/assets/demo/one-minute-composition.musicxml).
 
-![Generated relaxed canon score: repaired inversion](docs/assets/demo/output-score-repair-inversion.png)
+This case study is intentionally different from the CLI generation examples below. It is a
+composition-assist workflow result, not a claim that the current strict, repair, or solver engine
+emits this exact score in one step. The final score runs for 60.0 seconds at 72 BPM and ended the
+local audit at `100 / 100` with `0` rule violations.
 
-Listen to the selected candidate: [MP3](docs/assets/demo/output-repair-inversion-delay4.mp3) or [MIDI](docs/assets/demo/output-repair-inversion-delay4.mid).
-
-To inspect the same run in the browser, start the visualization API and frontend as described in [Visualization](docs/visualization.md), then upload `examples/melodies/bach_wtc1_c_major_prelude_upper.musicxml`.
-
-![Kithairon web UI showing the selected repair candidate](docs/assets/demo/web-ui-repair-inversion.png)
-
-The score breakdown view shows the tradeoff: the selected clip sounds better than the best strict fallback, but it still pays weak-beat dissonance penalties under the current scoring model.
-
-![Score breakdown with weak-beat dissonance penalties](docs/assets/demo/score-breakdown-repair.png)
-
-Additional preview picks are available in [docs/assets/demo](docs/assets/demo): the best strict fallback, `output-strict-transposition-delay4.*`, and a second strict alternative with a wider delay.
+See the [Demo](docs/demo.md) page for the source theme, embedded audio, and asset links, and see
+[Visualization](docs/visualization.md) for the browser workflow that supports this style of
+iteration.
 
 ## Requirements
 
