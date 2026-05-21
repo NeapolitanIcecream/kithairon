@@ -43,6 +43,14 @@ def test_build_phrase_spans_reports_arrival_high_point_and_warnings() -> None:
     )
     assert phrase.flat_sequence_warning is True
     assert set(phrase.warnings) == {"repeated_note_plateau", "flat_sequence"}
+    plateau_warnings = [
+        warning for warning in phrase.warning_items if warning.kind == "repeated_note_plateau"
+    ]
+    assert [(warning.voice_role, warning.event_ids) for warning in plateau_warnings] == [
+        ("leader", ("leader:l0", "leader:l1", "leader:l2")),
+        ("follower", ("follower:f0", "follower:f1", "follower:f2", "follower:f3")),
+    ]
+    assert all(warning.message for warning in phrase.warning_items)
 
 
 def _candidate(

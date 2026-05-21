@@ -497,9 +497,24 @@ export interface components {
             /** Repeated Note Plateaus */
             repeated_note_plateaus?: string[];
             start_q: components["schemas"]["RationalDTO"];
+            /** Warning Items */
+            warning_items?: components["schemas"]["PhraseWarningDTO"][];
             /** Warnings */
             warnings?: string[];
         };
+        /** PhraseWarningDTO */
+        PhraseWarningDTO: {
+            /** Event Ids */
+            event_ids: string[];
+            kind: components["schemas"]["PhraseWarningKindDTO"];
+            /** Message */
+            message: string;
+            voice_role: components["schemas"]["PhraseWarningVoiceRoleDTO"];
+        };
+        /** @enum {string} */
+        PhraseWarningKindDTO: "repeated_note_plateau" | "flat_sequence";
+        /** @enum {string} */
+        PhraseWarningVoiceRoleDTO: "leader" | "follower" | "both" | "unknown";
         /** PolishObjectiveWeights */
         PolishObjectiveWeights: {
             /** Bass Smoothness Penalty */

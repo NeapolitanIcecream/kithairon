@@ -19,6 +19,7 @@ from kithairon.visualization.models import (
     MusicalityMetricDTO,
     NoteVizDTO,
     PhraseSpanDTO,
+    PhraseWarningDTO,
     RationalDTO,
     RepairActionDTO,
     RepairActionKindDTO,
@@ -280,6 +281,15 @@ def _candidate_analysis(candidate: CanonCandidate) -> CandidateAnalysisDTO:
                 repeated_note_plateaus=list(phrase.repeated_note_plateaus),
                 flat_sequence_warning=phrase.flat_sequence_warning,
                 warnings=list(phrase.warnings),
+                warning_items=[
+                    PhraseWarningDTO(
+                        kind=warning.kind,
+                        voice_role=warning.voice_role,
+                        event_ids=list(warning.event_ids),
+                        message=warning.message,
+                    )
+                    for warning in phrase.warning_items
+                ],
             )
             for phrase in analysis.phrases
         ],

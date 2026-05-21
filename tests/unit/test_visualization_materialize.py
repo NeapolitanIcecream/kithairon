@@ -167,6 +167,7 @@ def test_materialize_candidate_attaches_composition_analysis() -> None:
             follower_events=(
                 NoteEvent(id="n0001", pitch=48, start=Fraction(0), duration=Fraction(1)),
                 NoteEvent(id="n0002", pitch=48, start=Fraction(1), duration=Fraction(1)),
+                NoteEvent(id="n0003", pitch=48, start=Fraction(2), duration=Fraction(1)),
             )
         )
     )
@@ -174,6 +175,13 @@ def test_materialize_candidate_attaches_composition_analysis() -> None:
     assert dto.analysis is not None
     assert dto.analysis.phrases[0].bar_start == 1
     assert dto.analysis.phrases[0].arrival_event_id is not None
+    assert dto.analysis.phrases[0].warning_items
+    assert dto.analysis.phrases[0].warning_items[0].voice_role == "follower"
+    assert dto.analysis.phrases[0].warning_items[0].event_ids == [
+        "follower:n0001",
+        "follower:n0002",
+        "follower:n0003",
+    ]
     assert dto.analysis.cadences
     assert dto.analysis.bass_support is not None
     assert dto.analysis.bass_support.static_bass is True

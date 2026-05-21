@@ -54,7 +54,9 @@ describe('RunSummarySchema', () => {
           notes: [],
           violations: [],
           repair_actions: [],
-          artifacts: { musicxml: '/api/runs/run-1/candidates/strict_0001/musicxml' },
+          artifacts: {
+            musicxml: '/api/runs/run-1/candidates/strict_0001/musicxml',
+          },
           metadata: {},
         },
       ],
@@ -221,6 +223,14 @@ describe('CandidateAnalysisSchema', () => {
           repeated_note_plateaus: ['follower:f1', 'follower:f2', 'follower:f3'],
           flat_sequence_warning: true,
           warnings: ['repeated_note_plateau', 'flat_sequence'],
+          warning_items: [
+            {
+              kind: 'repeated_note_plateau',
+              voice_role: 'follower',
+              event_ids: ['follower:f1', 'follower:f2', 'follower:f3'],
+              message: 'Lower voice repeats one pitch across 3 notes.',
+            },
+          ],
         },
       ],
       cadence: {
@@ -271,6 +281,7 @@ describe('CandidateAnalysisSchema', () => {
 
     expect(analysis.bass_support?.motion_label).toBe('static')
     expect(analysis.phrases[0].warnings).toContain('flat_sequence')
+    expect(analysis.phrases[0].warning_items[0].voice_role).toBe('follower')
     expect(analysis.cadences[0].cadence_type).toBe('open_phrase')
   })
 })

@@ -43,6 +43,8 @@ type CadenceTypeDTO = Literal[
     "ambiguous_close",
 ]
 type BassMotionLabelDTO = Literal["static", "stepwise", "active"]
+type PhraseWarningKindDTO = Literal["repeated_note_plateau", "flat_sequence"]
+type PhraseWarningVoiceRoleDTO = Literal["leader", "follower", "both", "unknown"]
 
 
 class VisualizationModel(BaseModel):
@@ -138,6 +140,17 @@ class TransformVizDTO(VisualizationModel):
     rhythm_scale: str | None = None
 
 
+class PhraseWarningDTO(VisualizationModel):
+    kind: PhraseWarningKindDTO
+    voice_role: PhraseWarningVoiceRoleDTO
+    event_ids: list[str]
+    message: str
+
+
+def _empty_phrase_warnings() -> list[PhraseWarningDTO]:
+    return []
+
+
 class PhraseSpanDTO(VisualizationModel):
     phrase_id: str
     bar_start: int
@@ -154,6 +167,7 @@ class PhraseSpanDTO(VisualizationModel):
     repeated_note_plateaus: list[str] = Field(default_factory=list)
     flat_sequence_warning: bool = False
     warnings: list[str] = Field(default_factory=list)
+    warning_items: list[PhraseWarningDTO] = Field(default_factory=_empty_phrase_warnings)
 
 
 class CadenceSummaryDTO(VisualizationModel):

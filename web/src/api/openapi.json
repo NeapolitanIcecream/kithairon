@@ -803,6 +803,13 @@
           "start_q": {
             "$ref": "#/components/schemas/RationalDTO"
           },
+          "warning_items": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseWarningDTO"
+            },
+            "title": "Warning Items",
+            "type": "array"
+          },
           "warnings": {
             "items": {
               "type": "string"
@@ -823,6 +830,52 @@
         ],
         "title": "PhraseSpanDTO",
         "type": "object"
+      },
+      "PhraseWarningDTO": {
+        "additionalProperties": false,
+        "properties": {
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PhraseWarningKindDTO"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "voice_role": {
+            "$ref": "#/components/schemas/PhraseWarningVoiceRoleDTO"
+          }
+        },
+        "required": [
+          "kind",
+          "voice_role",
+          "event_ids",
+          "message"
+        ],
+        "title": "PhraseWarningDTO",
+        "type": "object"
+      },
+      "PhraseWarningKindDTO": {
+        "enum": [
+          "repeated_note_plateau",
+          "flat_sequence"
+        ],
+        "type": "string"
+      },
+      "PhraseWarningVoiceRoleDTO": {
+        "enum": [
+          "leader",
+          "follower",
+          "both",
+          "unknown"
+        ],
+        "type": "string"
       },
       "PolishObjectiveWeights": {
         "additionalProperties": false,

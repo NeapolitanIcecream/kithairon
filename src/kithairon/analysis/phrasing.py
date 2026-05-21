@@ -5,9 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fractions import Fraction
 from itertools import groupby
+from typing import Literal
 
 from kithairon.analysis.timeline import parse_time_signature
 from kithairon.ir import CanonCandidate, NoteEvent, Voice
+
+type PhraseWarningKind = Literal["repeated_note_plateau", "flat_sequence"]
+type PhraseWarningVoiceRole = Literal["leader", "follower", "both", "unknown"]
+
+
+@dataclass(frozen=True)
+class PhraseWarning:
+    kind: PhraseWarningKind
+    voice_role: PhraseWarningVoiceRole
+    event_ids: tuple[str, ...]
+    message: str
 
 
 @dataclass(frozen=True)
@@ -27,6 +39,7 @@ class PhraseSpan:
     repeated_note_plateaus: tuple[str, ...]
     flat_sequence_warning: bool
     warnings: tuple[str, ...]
+    warning_items: tuple[PhraseWarning, ...]
 
 
 def build_phrase_spans(
@@ -53,28 +66,55 @@ def build_phrase_spans(
         )
         if not phrase_events:
             continue
-        start = min(event.start for _, event in phrase_events)
-        end = max(event.start + event.duration for _, event in phrase_events)
         phrases.append(
-            PhraseSpan(
-                phrase_id=f"phrase-{index:02d}",
+            _phrase_span(
+                index=index,
                 bar_start=bar_start,
                 bar_end=bar_end,
-                start=start,
-                end=end,
-                event_ids=tuple(_event_ref(voice, event) for voice, event in phrase_events),
-                note_count=len(phrase_events),
-                label=f"Bars {bar_start}-{bar_end}",
-                high_point_event_id=_event_ref(*_high_point(phrase_events)),
-                high_point_pitch=_high_point(phrase_events)[1].pitch,
-                arrival_event_id=_event_ref(*_arrival(phrase_events)),
-                arrival_pitch=_arrival(phrase_events)[1].pitch,
-                repeated_note_plateaus=_repeated_note_plateaus(phrase_events),
-                flat_sequence_warning=_flat_sequence_warning(phrase_events),
-                warnings=_warnings(phrase_events),
+                phrase_events=phrase_events,
             )
         )
     return tuple(phrases)
+
+
+def _phrase_span(
+    *,
+    index: int,
+    bar_start: int,
+    bar_end: int,
+    phrase_events: tuple[tuple[Voice, NoteEvent], ...],
+) -> PhraseSpan:
+    start = min(event.start for _, event in phrase_events)
+    end = max(event.start + event.duration for _, event in phrase_events)
+    high_point = _high_point(phrase_events)
+    arrival = _arrival(phrase_events)
+    warning_items = _warning_items(phrase_events)
+    repeated_note_plateaus = tuple(
+        event_id
+        for warning in warning_items
+        if warning.kind == "repeated_note_plateau"
+        for event_id in warning.event_ids
+    )
+    flat_sequence_warning = any(warning.kind == "flat_sequence" for warning in warning_items)
+    warnings = tuple(dict.fromkeys(warning.kind for warning in warning_items))
+    return PhraseSpan(
+        phrase_id=f"phrase-{index:02d}",
+        bar_start=bar_start,
+        bar_end=bar_end,
+        start=start,
+        end=end,
+        event_ids=tuple(_event_ref(voice, event) for voice, event in phrase_events),
+        note_count=len(phrase_events),
+        label=f"Bars {bar_start}-{bar_end}",
+        high_point_event_id=_event_ref(*high_point),
+        high_point_pitch=high_point[1].pitch,
+        arrival_event_id=_event_ref(*arrival),
+        arrival_pitch=arrival[1].pitch,
+        repeated_note_plateaus=repeated_note_plateaus,
+        flat_sequence_warning=flat_sequence_warning,
+        warnings=warnings,
+        warning_items=warning_items,
+    )
 
 
 def _pitched_voice_events(candidate: CanonCandidate) -> tuple[tuple[Voice, NoteEvent], ...]:
@@ -110,33 +150,49 @@ def _arrival(events: tuple[tuple[Voice, NoteEvent], ...]) -> tuple[Voice, NoteEv
     )
 
 
-def _repeated_note_plateaus(events: tuple[tuple[Voice, NoteEvent], ...]) -> tuple[str, ...]:
-    plateau_refs: list[str] = []
+def _warning_items(events: tuple[tuple[Voice, NoteEvent], ...]) -> tuple[PhraseWarning, ...]:
+    warnings: list[PhraseWarning] = []
     for voice, voice_events in _events_by_voice(events).items():
         for _, group in groupby(voice_events, key=lambda event: event.pitch):
             repeated = tuple(group)
             if len(repeated) >= 3:
-                plateau_refs.extend(_event_ref(voice, event) for event in repeated)
-    return tuple(plateau_refs)
-
-
-def _flat_sequence_warning(events: tuple[tuple[Voice, NoteEvent], ...]) -> bool:
-    for voice_events in _events_by_voice(events).values():
-        if len(voice_events) < 4:
-            continue
-        pitches = [event.pitch for event in voice_events if event.pitch is not None]
-        if pitches and max(pitches) - min(pitches) <= 2 and len(set(pitches)) <= 2:
-            return True
-    return False
-
-
-def _warnings(events: tuple[tuple[Voice, NoteEvent], ...]) -> tuple[str, ...]:
-    warnings: list[str] = []
-    if _repeated_note_plateaus(events):
-        warnings.append("repeated_note_plateau")
-    if _flat_sequence_warning(events):
-        warnings.append("flat_sequence")
+                event_ids = tuple(_event_ref(voice, event) for event in repeated)
+                warnings.append(
+                    PhraseWarning(
+                        kind="repeated_note_plateau",
+                        voice_role=voice.role,
+                        event_ids=event_ids,
+                        message=(
+                            f"{_voice_label(voice.role)} repeats one pitch across "
+                            f"{len(repeated)} notes."
+                        ),
+                    )
+                )
+        if _flat_sequence_warning_for_voice(voice_events):
+            warnings.append(
+                PhraseWarning(
+                    kind="flat_sequence",
+                    voice_role=voice.role,
+                    event_ids=tuple(_event_ref(voice, event) for event in voice_events),
+                    message=f"{_voice_label(voice.role)} stays within a narrow pitch band.",
+                )
+            )
     return tuple(warnings)
+
+
+def _flat_sequence_warning_for_voice(voice_events: tuple[NoteEvent, ...]) -> bool:
+    if len(voice_events) < 4:
+        return False
+    pitches = [event.pitch for event in voice_events if event.pitch is not None]
+    return bool(pitches and max(pitches) - min(pitches) <= 2 and len(set(pitches)) <= 2)
+
+
+def _voice_label(role: PhraseWarningVoiceRole) -> str:
+    if role == "leader":
+        return "Upper voice"
+    if role == "follower":
+        return "Lower voice"
+    return "Phrase"
 
 
 def _events_by_voice(

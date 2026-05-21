@@ -111,6 +111,13 @@ export const TransformVizSchema = z.object({
   rhythm_scale: z.string().nullable(),
 })
 
+export const PhraseWarningSchema = z.object({
+  kind: z.enum(['repeated_note_plateau', 'flat_sequence']),
+  voice_role: z.enum(['leader', 'follower', 'both', 'unknown']),
+  event_ids: z.array(z.string()),
+  message: z.string(),
+})
+
 export const PhraseSpanSchema = z.object({
   phrase_id: z.string(),
   bar_start: z.number().int(),
@@ -127,6 +134,7 @@ export const PhraseSpanSchema = z.object({
   repeated_note_plateaus: z.array(z.string()).optional().default([]),
   flat_sequence_warning: z.boolean().optional().default(false),
   warnings: z.array(z.string()).optional().default([]),
+  warning_items: z.array(PhraseWarningSchema).optional().default([]),
 })
 
 export const CadenceSummarySchema = z.object({
@@ -209,7 +217,10 @@ export const ObjectivePresetSchema = z.enum([
   'strengthen_cadence',
   'general_polish',
 ])
-export const SearchModeSchema = z.enum(['local_polish', 'rewrite_selected_voice'])
+export const SearchModeSchema = z.enum([
+  'local_polish',
+  'rewrite_selected_voice',
+])
 
 export const PolishObjectiveWeightsSchema = z.object({
   repeated_note_penalty: z.number().nullable().optional(),
@@ -243,7 +254,11 @@ export const PolishSummarySchema = z.object({
   changed_notes: z.number().int(),
 })
 
-export const ExperimentVariantStatusSchema = z.enum(['undecided', 'kept', 'rejected'])
+export const ExperimentVariantStatusSchema = z.enum([
+  'undecided',
+  'kept',
+  'rejected',
+])
 
 export const ExperimentVariantSchema = z.object({
   candidate_id: z.string(),
@@ -305,6 +320,7 @@ export type MusicalityMetric = z.infer<typeof MusicalityMetricSchema>
 export type MusicalityBreakdown = z.infer<typeof MusicalityBreakdownSchema>
 export type RepairAction = z.infer<typeof RepairActionSchema>
 export type TransformViz = z.infer<typeof TransformVizSchema>
+export type PhraseWarning = z.infer<typeof PhraseWarningSchema>
 export type PhraseSpan = z.infer<typeof PhraseSpanSchema>
 export type CadenceSummary = z.infer<typeof CadenceSummarySchema>
 export type BassSupport = z.infer<typeof BassSupportSchema>
@@ -315,10 +331,14 @@ export type LockVoice = z.infer<typeof LockVoiceSchema>
 export type RewriteVoice = z.infer<typeof RewriteVoiceSchema>
 export type ObjectivePreset = z.infer<typeof ObjectivePresetSchema>
 export type SearchMode = z.infer<typeof SearchModeSchema>
-export type PolishObjectiveWeights = z.infer<typeof PolishObjectiveWeightsSchema>
+export type PolishObjectiveWeights = z.infer<
+  typeof PolishObjectiveWeightsSchema
+>
 export type PolishRequest = z.infer<typeof PolishRequestSchema>
 export type PolishSummary = z.infer<typeof PolishSummarySchema>
-export type ExperimentVariantStatus = z.infer<typeof ExperimentVariantStatusSchema>
+export type ExperimentVariantStatus = z.infer<
+  typeof ExperimentVariantStatusSchema
+>
 export type ExperimentVariant = z.infer<typeof ExperimentVariantSchema>
 export type Experiment = z.infer<typeof ExperimentSchema>
 export type PolishResult = z.infer<typeof PolishResultSchema>

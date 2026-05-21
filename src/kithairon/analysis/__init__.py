@@ -10,7 +10,13 @@ from kithairon.analysis.cadence import (
 )
 from kithairon.analysis.composition import CompositionAnalysis, analyze_composition
 from kithairon.analysis.context import AnalysisContext, analyze_candidate
-from kithairon.analysis.phrasing import PhraseSpan, build_phrase_spans
+from kithairon.analysis.phrasing import (
+    PhraseSpan,
+    PhraseWarning,
+    PhraseWarningKind,
+    PhraseWarningVoiceRole,
+    build_phrase_spans,
+)
 from kithairon.analysis.timeline import (
     BeatStrength,
     TimeSignatureInfo,
@@ -34,6 +40,9 @@ __all__ = [
     "CadenceType",
     "CompositionAnalysis",
     "PhraseSpan",
+    "PhraseWarning",
+    "PhraseWarningKind",
+    "PhraseWarningVoiceRole",
     "TimeSignatureInfo",
     "TimeSlice",
     "Verticality",

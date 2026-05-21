@@ -45,9 +45,33 @@ describe('AnalysisPanel', () => {
                 high_point_pitch: 67,
                 arrival_event_id: 'leader:l4',
                 arrival_pitch: 67,
-                repeated_note_plateaus: ['follower:f1', 'follower:f2', 'follower:f3'],
+                repeated_note_plateaus: [
+                  'follower:f1',
+                  'follower:f2',
+                  'follower:f3',
+                ],
                 flat_sequence_warning: true,
                 warnings: ['repeated_note_plateau', 'flat_sequence'],
+                warning_items: [
+                  {
+                    kind: 'repeated_note_plateau',
+                    voice_role: 'leader',
+                    event_ids: ['leader:l1', 'leader:l2', 'leader:l3'],
+                    message: 'Upper voice repeats one note.',
+                  },
+                  {
+                    kind: 'repeated_note_plateau',
+                    voice_role: 'follower',
+                    event_ids: ['follower:f1', 'follower:f2', 'follower:f3'],
+                    message: 'Lower voice repeats one note.',
+                  },
+                  {
+                    kind: 'flat_sequence',
+                    voice_role: 'follower',
+                    event_ids: ['follower:f1', 'follower:f2', 'follower:f3'],
+                    message: 'Lower voice is flat.',
+                  },
+                ],
               },
             ],
             cadence: {
@@ -102,18 +126,39 @@ describe('AnalysisPanel', () => {
     expect(screen.getByText('Analysis')).toBeTruthy()
     expect(screen.getByText('Bars 1-2')).toBeTruthy()
     expect(screen.getByText('Weak final cadence')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Arrival leader:l4' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Arrival leader:l4' }),
+    ).toBeTruthy()
     expect(screen.getByRole('button', { name: 'High 67' })).toBeTruthy()
-    expect(screen.getByText('flat_sequence')).toBeTruthy()
+    expect(screen.getByText('flat_sequence lower')).toBeTruthy()
     expect(screen.getByText('Open Phrase')).toBeTruthy()
-    expect(screen.getByText('Support 100% / foundation 75% / independence 20%')).toBeTruthy()
+    expect(
+      screen.getByText('Support 100% / foundation 75% / independence 20%'),
+    ).toBeTruthy()
     expect(screen.getByText('static')).toBeTruthy()
 
     await userEvent.click(screen.getByRole('button', { name: 'follower:f1' }))
-    await userEvent.click(screen.getByRole('button', { name: 'repeated_note_plateau' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Polish finding' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Polish cadence' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Polish bass support' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'repeated_note_plateau lower' }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Rewrite lower to reduce repetition',
+      }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Rewrite upper to reduce repetition',
+      }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Strengthen cadence in bars 1-1' }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Rewrite lower to improve bass support',
+      }),
+    )
 
     expect(onHighlightEvents).toHaveBeenCalledWith(['follower:f1'])
     expect(onHighlightEvents).toHaveBeenCalledWith([
@@ -124,6 +169,15 @@ describe('AnalysisPanel', () => {
     expect(onPolishFinding).toHaveBeenCalledWith({
       barStart: 1,
       barEnd: 2,
+      lockVoice: 'leader',
+      rewriteVoice: 'follower',
+      objectivePreset: 'reduce_repetition',
+    })
+    expect(onPolishFinding).toHaveBeenCalledWith({
+      barStart: 1,
+      barEnd: 2,
+      lockVoice: 'follower',
+      rewriteVoice: 'leader',
       objectivePreset: 'reduce_repetition',
     })
     expect(onPolishFinding).toHaveBeenCalledWith({
