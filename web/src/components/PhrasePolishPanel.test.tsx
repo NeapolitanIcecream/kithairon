@@ -57,7 +57,8 @@ describe('PhrasePolishPanel', () => {
         rewrite_voice: 'follower',
       },
     }
-    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args
       return new Response(
         JSON.stringify({
           request: {
@@ -126,7 +127,8 @@ describe('PhrasePolishPanel', () => {
         search_mode: 'rewrite_selected_voice',
       },
     }
-    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args
       return new Response(
         JSON.stringify({
           request: {
@@ -187,7 +189,8 @@ describe('PhrasePolishPanel', () => {
 
   it('requests fixed-lower invention mode with an explicit rewrite voice', async () => {
     const selectedCandidate = candidate('strict_0001')
-    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args
       return new Response(
         JSON.stringify({
           request: {

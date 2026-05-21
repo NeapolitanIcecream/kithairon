@@ -220,7 +220,8 @@ describe('translateFeedback', () => {
   })
 
   it('posts feedback text and validates suggested polish actions', async () => {
-    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args
       return new Response(
         JSON.stringify({
           input_text: 'cadence weak',

@@ -54,6 +54,13 @@ class ExtraCommandOptions:
     score_profile: str | None = None
 
 
+@dataclass(frozen=True)
+class PolishCommandOptions:
+    lock_voice: str = "none"
+    rewrite_voice: str = "auto"
+    preset: str = "general-polish"
+
+
 def _option(*param_decls: str, **kwargs: Any) -> object:
     return typer.Option(*param_decls, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
@@ -215,27 +222,25 @@ def generate(
     console.print_json(data=payload)
 
 
-@app.command()
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def polish(
     run_dir: Annotated[Path, _argument(file_okay=False, help="Generated run directory.")],
     candidate_id: Annotated[str, CANDIDATE_ID_OPTION],
     bars: Annotated[str, BARS_OPTION],
-    lock_voice: Annotated[str, LOCK_VOICE_OPTION] = "none",
-    rewrite_voice: Annotated[str, REWRITE_VOICE_OPTION] = "auto",
-    preset: Annotated[str, OBJECTIVE_PRESET_OPTION] = "general-polish",
     top_k: Annotated[int, TOP_K_OPTION] = 6,
 ) -> None:
     """Generate selected-bar local rewrite variants for an existing run candidate."""
+    extra_options = _polish_extra_options()
     try:
         bar_start, bar_end = _parse_bar_range(bars)
         request = PolishRequest.model_validate(
             {
                 "bar_start": bar_start,
                 "bar_end": bar_end,
-                "lock_voice": normalize_cli_token(lock_voice),
-                "rewrite_voice": normalize_cli_token(rewrite_voice),
+                "lock_voice": normalize_cli_token(extra_options.lock_voice),
+                "rewrite_voice": normalize_cli_token(extra_options.rewrite_voice),
                 "max_variants": top_k,
-                "objective_preset": normalize_cli_token(preset),
+                "objective_preset": normalize_cli_token(extra_options.preset),
             }
         )
         result = polish_run_candidate(run_dir, candidate_id, request)
@@ -288,6 +293,48 @@ def _resolve_extra_options() -> ExtraCommandOptions:
         [] if context is None else list(context.args),
         allow_overwrite=False,
     )
+
+
+def _polish_extra_options() -> PolishCommandOptions:
+    context = get_current_context(silent=True)
+    return _parse_polish_extra_options([] if context is None else list(context.args))
+
+
+_POLISH_EXTRA_FIELDS = {
+    "--lock-voice": "lock_voice",
+    "--rewrite-voice": "rewrite_voice",
+    "--preset": "preset",
+}
+
+
+def _parse_polish_extra_options(extra_args: list[str]) -> PolishCommandOptions:
+    values = {
+        "lock_voice": "none",
+        "rewrite_voice": "auto",
+        "preset": "general-polish",
+    }
+    index = 0
+    while index < len(extra_args):
+        option, separator, inline_value = extra_args[index].partition("=")
+        field = _POLISH_EXTRA_FIELDS.get(option)
+        if field is None:
+            raise UsageError(f"Unsupported option or argument: {extra_args[index]}")
+        values[field] = (
+            inline_value if separator else _required_extra_option_value(extra_args, index, option)
+        )
+        index += 1 if separator else 2
+    return PolishCommandOptions(
+        lock_voice=values["lock_voice"],
+        rewrite_voice=values["rewrite_voice"],
+        preset=values["preset"],
+    )
+
+
+def _required_extra_option_value(extra_args: list[str], index: int, option: str) -> str:
+    try:
+        return extra_args[index + 1]
+    except IndexError as exc:
+        raise UsageError(f"{option} requires a value") from exc
 
 
 def _parse_extra_options(extra_args: list[str], *, allow_overwrite: bool) -> ExtraCommandOptions:

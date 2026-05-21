@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Button, Group, Stack, Table, Text, Textarea } from '@mantine/core'
 import { ApiClientError } from '../api/client'
 import { patchExperiment } from '../api/runs'
@@ -19,14 +19,6 @@ export function CandidateLabPanel({
 }: CandidateLabPanelProps) {
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    setDraftNotes(
-      Object.fromEntries(
-        experiments.map((experiment) => [experiment.experiment_id, experiment.notes]),
-      ),
-    )
-  }, [experiments])
 
   async function applyPatch(
     experiment: Experiment,
@@ -94,20 +86,20 @@ export function CandidateLabPanel({
           />
           <Textarea
             label="Notes"
-            value={draftNotes[experiment.experiment_id] ?? ''}
+            value={draftNotes[experiment.experiment_id] ?? experiment.notes}
             minRows={2}
             onChange={(event) =>
-              setDraftNotes({
-                ...draftNotes,
+              setDraftNotes((current) => ({
+                ...current,
                 [experiment.experiment_id]: event.currentTarget.value,
-              })
+              }))
             }
           />
           <Button
             variant="light"
             onClick={() =>
               void applyPatch(experiment, {
-                notes: draftNotes[experiment.experiment_id] ?? '',
+                notes: draftNotes[experiment.experiment_id] ?? experiment.notes,
               })
             }
           >

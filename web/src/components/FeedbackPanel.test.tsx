@@ -50,7 +50,8 @@ describe('FeedbackPanel', () => {
       score: { ...selectedCandidate.score, total: 89 },
       metadata: { parent_candidate_id: 'strict_0001' },
     }
-    const fetchMock = vi.fn(async (path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      const [path] = args
       if (path.endsWith('/feedback/translate')) {
         return new Response(
           JSON.stringify({

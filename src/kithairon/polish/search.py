@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import cast
 
 from kithairon.analysis.timeline import parse_time_signature
@@ -11,8 +11,21 @@ from kithairon.config import QualityConfig
 from kithairon.ir import CanonCandidate, Voice, VoiceRole
 from kithairon.polish.ids import derived_candidate_id
 from kithairon.polish.models import PolishRequest
-from kithairon.polish.objective import evaluate_objective
-from kithairon.scoring import compute_musicality, score_candidate
+from kithairon.polish.objective import ObjectiveEvaluation, evaluate_objective
+from kithairon.scoring import MusicalityBreakdown, compute_musicality, score_candidate
+
+type ScoredVariant = tuple[CanonCandidate, float, int, int]
+
+
+@dataclass(frozen=True)
+class ScoringContext:
+    parent: CanonCandidate
+    request: PolishRequest
+    rewrite_role: VoiceRole
+    voice_index: int
+    score_profile: str
+    quality: QualityConfig | None
+    seen_pitch_sequences: set[tuple[int | None, ...]]
 
 
 def search_polish_variants(
@@ -46,6 +59,15 @@ def search_polish_variants(
     )
     scored: list[tuple[CanonCandidate, float, int, int]] = []
     seen_pitch_sequences: set[tuple[int | None, ...]] = set()
+    scoring_context = ScoringContext(
+        parent=candidate,
+        request=request,
+        rewrite_role=rewrite_role,
+        voice_index=voice_index,
+        score_profile=score_profile,
+        quality=quality,
+        seen_pitch_sequences=seen_pitch_sequences,
+    )
     beam: list[CanonCandidate] = [search_root]
     serial = 0
     for _depth in range(_max_edited_notes(request)):
@@ -53,15 +75,9 @@ def search_polish_variants(
         for variant in _candidate_substitutions(beam, voice_index, selected_indexes, request):
             serial += 1
             scored_item = _scored_variant(
-                parent=candidate,
+                context=scoring_context,
                 variant=variant,
-                request=request,
-                rewrite_role=rewrite_role,
-                voice_index=voice_index,
                 serial=serial,
-                score_profile=score_profile,
-                quality=quality,
-                seen_pitch_sequences=seen_pitch_sequences,
             )
             if scored_item is None:
                 continue
@@ -85,26 +101,22 @@ def search_polish_variants(
 
 def _scored_variant(
     *,
-    parent: CanonCandidate,
+    context: ScoringContext,
     variant: CanonCandidate,
-    request: PolishRequest,
-    rewrite_role: VoiceRole,
-    voice_index: int,
     serial: int,
-    score_profile: str,
-    quality: QualityConfig | None,
-    seen_pitch_sequences: set[tuple[int | None, ...]],
-) -> tuple[CanonCandidate, float, int, int] | None:
-    pitch_sequence = _voice_pitch_sequence(variant.voices[voice_index])
-    if pitch_sequence in seen_pitch_sequences:
+) -> ScoredVariant | None:
+    if _variant_seen(context, variant):
         return None
-    seen_pitch_sequences.add(pitch_sequence)
-    evaluated = score_candidate(variant, profile_name=score_profile, quality=quality)
+    evaluated = score_candidate(
+        variant,
+        profile_name=context.score_profile,
+        quality=context.quality,
+    )
     objective = evaluate_objective(
         evaluated,
-        request,
-        rewrite_role=rewrite_role,
-        parent=parent,
+        context.request,
+        rewrite_role=context.rewrite_role,
+        parent=context.parent,
     )
     musicality = compute_musicality(evaluated)
     ranking_score = musicality.total + objective.total
@@ -112,23 +124,14 @@ def _scored_variant(
     return (
         replace(
             evaluated,
-            metadata={
-                **evaluated.metadata,
-                "parent_candidate_id": parent.id,
-                "edited_bars": request.bar_range.as_list(),
-                "rewrite_voice": rewrite_role,
-                "search_mode": request.search_mode,
-                "allow_rhythm_change": request.allow_rhythm_change,
-                "polish_variant_serial": serial,
-                "polish_objective": {
-                    "preset": request.objective_preset,
-                    "score": objective.total,
-                    "components": dict(objective.components),
-                    "weights": dict(objective.weights),
-                    "musicality_total": musicality.total,
-                    "ranking_score": round(ranking_score, 4),
-                },
-            },
+            metadata=_scored_variant_metadata(
+                context=context,
+                evaluated=evaluated,
+                objective=objective,
+                musicality=musicality,
+                ranking_score=ranking_score,
+                serial=serial,
+            ),
         ),
         ranking_score,
         hard_violations,
@@ -136,9 +139,61 @@ def _scored_variant(
     )
 
 
+def _variant_seen(context: ScoringContext, variant: CanonCandidate) -> bool:
+    pitch_sequence = _voice_pitch_sequence(variant.voices[context.voice_index])
+    if pitch_sequence in context.seen_pitch_sequences:
+        return True
+    context.seen_pitch_sequences.add(pitch_sequence)
+    return False
+
+
+def _scored_variant_metadata(
+    *,
+    context: ScoringContext,
+    evaluated: CanonCandidate,
+    objective: ObjectiveEvaluation,
+    musicality: MusicalityBreakdown,
+    ranking_score: float,
+    serial: int,
+) -> dict[str, object]:
+    request = context.request
+    return {
+        **evaluated.metadata,
+        "parent_candidate_id": context.parent.id,
+        "edited_bars": request.bar_range.as_list(),
+        "rewrite_voice": context.rewrite_role,
+        "search_mode": request.search_mode,
+        "allow_rhythm_change": request.allow_rhythm_change,
+        "polish_variant_serial": serial,
+        "polish_objective": _objective_metadata(
+            request=request,
+            objective=objective,
+            musicality=musicality,
+            ranking_score=ranking_score,
+        ),
+    }
+
+
+def _objective_metadata(
+    *,
+    request: PolishRequest,
+    objective: ObjectiveEvaluation,
+    musicality: MusicalityBreakdown,
+    ranking_score: float,
+) -> dict[str, object]:
+    return {
+        "preset": request.objective_preset,
+        "score": objective.total,
+        "components": dict(objective.components),
+        "weights": dict(objective.weights),
+        "musicality_total": musicality.total,
+        "ranking_score": round(ranking_score, 4),
+    }
+
+
 def _rank_scored(
-    scored: list[tuple[CanonCandidate, float, int, int]],
-) -> list[tuple[CanonCandidate, float, int, int]]:
+    scored: list[ScoredVariant],
+) -> list[ScoredVariant]:
     return sorted(
         scored,
         key=lambda item: (item[2], -item[1], -item[0].score, item[3]),

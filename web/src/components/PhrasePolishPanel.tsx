@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
   Alert,
@@ -31,6 +31,11 @@ type PhrasePolishPanelProps = {
   selectedCandidate: CandidateViz | null
   onSelectCandidate: (candidateId: string) => void
   onVariantsReceived: (variants: CandidateViz[], experiment: Experiment | null | undefined) => void
+}
+
+type LastResultState = {
+  candidateId: string | null
+  result: PolishResult
 }
 
 const lockVoiceOptions: Array<{ value: LockVoice; label: string }> = [
@@ -75,11 +80,9 @@ export function PhrasePolishPanel({
   const [objectivePreset, setObjectivePreset] = useState<ObjectivePreset>('general_polish')
   const [polishMode, setPolishMode] = useState<PolishMode>('local_polish')
   const [maxVariants, setMaxVariants] = useState(6)
-  const [lastResult, setLastResult] = useState<PolishResult | null>(null)
-
-  useEffect(() => {
-    setLastResult(null)
-  }, [selectedCandidate?.candidate_id])
+  const [lastResultState, setLastResultState] = useState<LastResultState | null>(null)
+  const lastResult =
+    lastResultState?.candidateId === selectedCandidateId ? lastResultState.result : null
 
   const candidateOptions = useMemo(
     () =>
@@ -107,7 +110,10 @@ export function PhrasePolishPanel({
       })
     },
     onSuccess: (result) => {
-      setLastResult(result)
+      setLastResultState({
+        candidateId: result.summary.parent_candidate_id,
+        result,
+      })
       onVariantsReceived(result.candidates, result.experiment)
     },
   })

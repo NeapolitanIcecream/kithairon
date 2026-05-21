@@ -35,7 +35,8 @@ describe('CandidateLabPanel', () => {
       notes: 'keeper',
       variants: [{ ...experiment.variants[0], status: 'kept' as const }],
     }
-    const fetchMock = vi.fn(async (_path: string, _init?: RequestInit) => {
+    const fetchMock = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args
       return new Response(JSON.stringify(updated), {
         headers: { 'content-type': 'application/json' },
         status: 200,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
   Alert,
@@ -27,6 +27,11 @@ type FeedbackPanelProps = {
   onVariantsReceived: (variants: CandidateViz[], experiment: Experiment | null | undefined) => void
 }
 
+type TranslationState = {
+  candidateId: string | null
+  value: FeedbackTranslation
+}
+
 export function FeedbackPanel({
   runSummary,
   selectedCandidate,
@@ -36,13 +41,8 @@ export function FeedbackPanel({
   const [useTargetBars, setUseTargetBars] = useState(false)
   const [barStart, setBarStart] = useState(1)
   const [barEnd, setBarEnd] = useState(1)
-  const [translation, setTranslation] = useState<FeedbackTranslation | null>(null)
+  const [translationState, setTranslationState] = useState<TranslationState | null>(null)
   const [activeActionId, setActiveActionId] = useState<string | null>(null)
-
-  useEffect(() => {
-    setTranslation(null)
-    setActiveActionId(null)
-  }, [selectedCandidate?.candidate_id])
 
   const translateMutation = useMutation({
     mutationFn: () => {
@@ -56,7 +56,11 @@ export function FeedbackPanel({
         barEnd: useTargetBars ? barEnd : undefined,
       })
     },
-    onSuccess: setTranslation,
+    onSuccess: (value) =>
+      setTranslationState({
+        candidateId: value.candidate_id,
+        value,
+      }),
   })
 
   const actionMutation = useMutation({
@@ -84,6 +88,9 @@ export function FeedbackPanel({
   })
 
   const disabled = runSummary === null || selectedCandidate === null
+  const selectedCandidateId = selectedCandidate?.candidate_id ?? null
+  const translation =
+    translationState?.candidateId === selectedCandidateId ? translationState.value : null
   const error = translateMutation.error ?? actionMutation.error
   const errorMessage = error === null ? null : readableErrorMessage(error)
 
