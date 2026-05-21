@@ -60,10 +60,19 @@ That read path lets a saved experiment variant behave like any other candidate a
 The API can polish it again, translate feedback against it, return it through the candidate
 endpoint, and serve its artifacts through `artifact_index.json`.
 
+Derived polish variants use request-scoped stable ids instead of `parent + rank`. That keeps
+repeated polish requests against the same parent candidate addressable after reload and lets the
+catalog, artifact index, and frontend candidate merge reject true duplicate ids instead of
+silently aliasing them.
+
 Fixed-voice invention is implemented as a specialized polish mode, not a separate generation
 engine. It keeps the locked voice fixed, preserves rhythm and note count, and searches a bounded
 set of pitch edits in the selected bars. Lower-voice search ranks variants with bass-support
 analysis signals. Upper-voice search ranks variants with phrase, contour, and cadence signals.
+
+Phrase analysis now carries per-warning provenance. Each phrase warning records the affected
+voice role and concrete event ids, which lets the UI highlight the exact notes and map quick
+actions to the intended rewrite target instead of always falling back to generic follower edits.
 
 ## Generated Artifacts
 

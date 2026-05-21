@@ -74,6 +74,10 @@ Experiment variants survive reload. When you reopen a run, saved variants are me
 the same candidate pool as the base run candidates, so you can select them, polish them again,
 use them in feedback translation, or add them to A/B compare.
 
+The candidate table and compare view also keep the provenance visible. Base run candidates are
+marked as `run`, saved polish variants are marked as `experiment`, and experiment-derived rows
+show the saved experiment id so you can tell which branch you are editing.
+
 Fixed-voice invention uses the same local polish API, but its ranking is specialized:
 
 - lower-voice rewrites reward stronger bass support, root-support proxy, foundation, and bass independence
@@ -90,7 +94,7 @@ It shows phrase spans, cadence summaries, strong-beat bass support notes, and wh
 voice is static, stepwise, or active. Analysis rows are actionable:
 
 - click phrase rows, plateau warnings, arrivals, high points, cadence rows, or support notes to highlight the related piano-roll events
-- use `Polish finding` on phrase warnings to run `reduce_repetition` over that phrase span
+- use `Polish finding` on phrase warnings to run `reduce_repetition` over that phrase span; upper-voice warnings rewrite the upper voice, lower-voice warnings rewrite the lower voice
 - use `Polish cadence` on weak or open cadence rows to run `strengthen_cadence` over the ending bars
 - use `Polish bass support` on static bass summaries to run fixed-lower rewrite over the affected bars
 

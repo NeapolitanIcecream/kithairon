@@ -123,6 +123,35 @@ uv run canonize --overwrite generate examples/melodies/scale_c_major.musicxml \
   --engine strict
 ```
 
+## Composition Assistance
+
+Use the browser UI when you want to keep iterating on one candidate instead of only generating a fresh run.
+
+Start the API server from the repository root:
+
+```bash
+uv sync --group dev --extra solver --extra visual
+uv run canonize-web --output-root ./runs --host 127.0.0.1 --port 8000
+```
+
+Start the frontend in another shell:
+
+```bash
+cd web
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open the Vite URL, upload a melody, and select a candidate. From there you can:
+
+- run local `Phrase Polish` over a bar range
+- keep one voice fixed and rewrite the other with fixed-voice invention
+- translate feedback such as `bass too static` or `too repetitive` into structured polish requests
+- trigger polish directly from phrase, cadence, and bass findings in the `Analysis` panel
+- keep saved experiment variants in `Candidate Lab` and reopen them after reload for more polish, compare, or export
+
+See [Visualization](docs/visualization.md) for the full browser workflow.
+
 ## Engine Examples
 
 Strict generation keeps the follower voice as an exact transform of the input melody:
