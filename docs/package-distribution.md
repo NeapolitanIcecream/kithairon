@@ -14,7 +14,7 @@ Do not publish this project to PyPI under the `kithairon` distribution name. Tha
 
 Publish package-index releases from a tagged commit. The package version in `pyproject.toml`, `src/kithairon/__init__.py`, and `CHANGELOG.md` must match the tag without the leading `v`.
 
-For example, release `0.1.1` from tag `v0.1.1`.
+For example, release `0.1.2` from tag `v0.1.2`.
 
 ## Local package checks
 
@@ -53,7 +53,7 @@ python3 -m venv /tmp/kithairon-testpypi
 /tmp/kithairon-testpypi/bin/python -m pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  kithairon-canon==0.1.1
+  kithairon-canon==0.1.2
 /tmp/kithairon-testpypi/bin/canonize --help
 ```
 
@@ -77,7 +77,7 @@ After upload, install from PyPI in a clean environment:
 ```bash
 python3 -m venv /tmp/kithairon-pypi
 /tmp/kithairon-pypi/bin/python -m pip install --upgrade pip
-/tmp/kithairon-pypi/bin/python -m pip install kithairon-canon==0.1.1
+/tmp/kithairon-pypi/bin/python -m pip install kithairon-canon==0.1.2
 /tmp/kithairon-pypi/bin/canonize --help
 ```
 

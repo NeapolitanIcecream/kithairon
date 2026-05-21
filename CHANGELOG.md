@@ -2,6 +2,27 @@
 
 All notable changes to Kithairon are recorded here.
 
+## 0.1.2 - 2026-05-21
+
+Composition-assist and candidate-polish workflow expansion.
+
+### Added
+
+- Analysis-driven polish actions for phrase cadence, bass motion, fixed-voice invention, and follow-up variants.
+- Candidate Lab experiment storage, saved-variant cataloging, and stable derived candidate identifiers.
+- Compare view, feedback translation, musicality breakdowns, and phrase-polish controls in the web UI.
+- API routes and generated OpenAPI schema updates for runs, artifacts, analysis, feedback, and polish workflows.
+- Unit and integration coverage for analysis, feedback, polish search, experiment storage, CLI polish flows, and web components.
+
+### Changed
+
+- Improved config override structure and composition-assist documentation.
+
+### Fixed
+
+- Restored GitHub CI gates after workflow updates.
+- Closed composition-assist audit gaps and stabilized CLI help assertions.
+
 ## 0.1.1 - 2026-05-19
 
 Package-index release preparation.
