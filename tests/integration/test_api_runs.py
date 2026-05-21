@@ -285,6 +285,67 @@ def test_reloaded_experiment_variant_can_be_repolished_and_used_for_feedback(
     assert cast(dict[str, Any], candidate_payload["metadata"])["source_kind"] == "experiment"
 
 
+def test_repeated_polish_requests_same_parent_keep_distinct_variant_ids(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+    run_payload = _upload_scale_run(client)
+    run_id = cast(str, run_payload["run_id"])
+    parent_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+    follower_bar = _first_pitched_bar(parent_candidate, role="follower")
+
+    first = _post_polish(client, run_id, candidate_id, follower_bar)
+    second = _post_polish(client, run_id, candidate_id, follower_bar)
+
+    first_variant = cast(list[dict[str, Any]], first["candidates"])[0]
+    second_variant = cast(list[dict[str, Any]], second["candidates"])[0]
+    variant_ids = {
+        cast(str, first_variant["candidate_id"]),
+        cast(str, second_variant["candidate_id"]),
+    }
+    reloaded_client = TestClient(create_app(output_root=tmp_path))
+
+    assert len(variant_ids) == 2
+    for variant_id in variant_ids:
+        candidate_response = reloaded_client.get(f"/api/runs/{run_id}/candidates/{variant_id}")
+        musicxml_response = reloaded_client.get(
+            f"/api/runs/{run_id}/candidates/{variant_id}/musicxml"
+        )
+        assert candidate_response.status_code == 200, candidate_response.text
+        assert musicxml_response.status_code == 200, musicxml_response.text
+
+
+def test_nested_repolish_keeps_parent_and_child_variants_addressable(
+    tmp_path: Path,
+) -> None:
+    client = TestClient(create_app(output_root=tmp_path))
+    run_payload = _upload_scale_run(client)
+    run_id = cast(str, run_payload["run_id"])
+    parent_candidate = cast(list[dict[str, Any]], run_payload["candidates"])[0]
+    candidate_id = cast(str, parent_candidate["candidate_id"])
+    follower_bar = _first_pitched_bar(parent_candidate, role="follower")
+
+    first = _post_polish(client, run_id, candidate_id, follower_bar)
+    parent_variant = cast(list[dict[str, Any]], first["candidates"])[0]
+    parent_variant_id = cast(str, parent_variant["candidate_id"])
+    child_bar = _first_pitched_bar(parent_variant, role="follower")
+    second = _post_polish(client, run_id, parent_variant_id, child_bar)
+    child_variant = cast(list[dict[str, Any]], second["candidates"])[0]
+    child_variant_id = cast(str, child_variant["candidate_id"])
+    reloaded_client = TestClient(create_app(output_root=tmp_path))
+
+    assert parent_variant_id != child_variant_id
+    assert child_variant_id.startswith(f"{parent_variant_id}__polish__")
+    for variant_id in (parent_variant_id, child_variant_id):
+        candidate_response = reloaded_client.get(f"/api/runs/{run_id}/candidates/{variant_id}")
+        musicxml_response = reloaded_client.get(
+            f"/api/runs/{run_id}/candidates/{variant_id}/musicxml"
+        )
+        assert candidate_response.status_code == 200, candidate_response.text
+        assert musicxml_response.status_code == 200, musicxml_response.text
+
+
 def test_follow_up_acceptance_path_reuses_variant_and_analysis_action(
     tmp_path: Path,
 ) -> None:
@@ -421,6 +482,37 @@ def _first_pitched_bar(candidate: dict[str, Any], *, role: str) -> int:
         if note["role"] == role and note["pitch"] is not None:
             return cast(int, note["bar"])
     raise AssertionError(f"candidate has no pitched {role} note")
+
+
+def _upload_scale_run(client: TestClient) -> dict[str, Any]:
+    with Path("examples/melodies/scale_c_major.musicxml").open("rb") as handle:
+        response = client.post(
+            "/api/runs",
+            files={"file": ("scale_c_major.musicxml", handle, "application/xml")},
+            data={"engine": "strict", "top_k": "1"},
+        )
+    assert response.status_code == 200, response.text
+    return cast(dict[str, Any], response.json())
+
+
+def _post_polish(
+    client: TestClient,
+    run_id: str,
+    candidate_id: str,
+    bar: int,
+) -> dict[str, Any]:
+    response = client.post(
+        f"/api/runs/{run_id}/candidates/{candidate_id}/polish",
+        json={
+            "bar_start": bar,
+            "bar_end": bar,
+            "lock_voice": "leader",
+            "rewrite_voice": "follower",
+            "max_variants": 1,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return cast(dict[str, Any], response.json())
 
 
 def _analysis_polish_request(candidate: dict[str, Any]) -> dict[str, object]:
